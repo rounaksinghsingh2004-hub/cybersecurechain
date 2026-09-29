@@ -195,6 +195,7 @@ function Incidents() {
   const [actions, setActions] = useState<Record<number, string>>({});
   const [toast, setToast] = useState<{id: number; action: string} | null>(null);
   const [applying, setApplying] = useState<number | null>(null);
+  const [dismissed, setDismissed] = useState<Set<number>>(new Set());
 
   // Auto-refresh every 5s to pick up new ML-IDS-created incidents
   useEffect(() => {
@@ -207,12 +208,15 @@ function Incidents() {
 
   const getAction = (id: number) => actions[id] || 'ISOLATE_ASSET';
   const DONE = ['CONTAINED', 'RECOVERED', 'MITIGATED', 'RESOLVED'];
-  const active = data.filter(i => !DONE.includes(i.status));
+  // Instantly hide dismissed ones from active; show all resolved from API
+  const active = data.filter(i => !DONE.includes(i.status) && !dismissed.has(i.id));
   const resolved = data.filter(i => DONE.includes(i.status));
 
   const respond = async (id: number) => {
     const a = getAction(id);
     setApplying(id);
+    // Optimistically remove from active list immediately
+    setDismissed(prev => new Set([...prev, id]));
     try {
       await post(`/api/incidents/${id}/respond`, { action: a });
       setToast({ id, action: a });
