@@ -1,4 +1,9 @@
+import asyncio
+import random
+import time
+from datetime import datetime
 from contextlib import asynccontextmanager
+from typing import Optional
 from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -7,10 +12,182 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.database import SessionLocal, get_db, initialize_database
 from app.digital_twin.service import DigitalTwinService, asset_payload
+from app.live.autonomous_engine import autonomous_engine
+from app.live.state_machine import AssetStateMachine
+from app.live.traffic import TrafficGenerator
 from app.models import CyberAsset, Employee, Event, Facility, Incident, Inventory, OperationalAsset, Order, Product, SecurityControl, Shipment, Simulation, Vehicle
 from app.seed import seed
 from app.services.operations import OperationsService
 from app.simulation.engine import SimulationEngine
+
+
+# ---------------------------------------------------------------------------
+# WebSocket Connection Manager — broadcasts to all connected browser clients
+# ---------------------------------------------------------------------------
+
+class ConnectionManager:
+    def __init__(self):
+        self.active: list[WebSocket] = []
+
+    async def connect(self, ws: WebSocket):
+        await ws.accept()
+        self.active.append(ws)
+
+    def disconnect(self, ws: WebSocket):
+        if ws in self.active:
+            self.active.remove(ws)
+
+    async def broadcast(self, data: dict):
+        dead = []
+        for ws in self.active:
+            try:
+                await ws.send_json(data)
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            self.disconnect(ws)
+
+
+manager = ConnectionManager()
+traffic_gen = TrafficGenerator()
+
+
+# ---------------------------------------------------------------------------
+# Background live scanner — runs every 3 s, scores traffic, broadcasts events
+# ---------------------------------------------------------------------------
+
+async def live_scanner():
+    """
+    Continuously generates and scores synthetic network traffic for each
+    monitored facility. Broadcasts every event over WebSocket. When an attack
+    is detected, triggers the asset state machine to update the DB and sends
+    a high-priority ATTACK alert to the frontend.
+    """
+    # Track which facilities we've already fired propagation for (reset on recovery)
+    propagated: set[int] = set()
+    tick_count = 0
+
+    while True:
+        await asyncio.sleep(2.5)
+        tick_count += 1
+        db = SessionLocal()
+        try:
+            # 1. Check Autonomous Adversary AI
+            if autonomous_engine.adversary_enabled:
+                now = time.time()
+                active_attacks = traffic_gen.active_attacks()
+                if not active_attacks and (now - autonomous_engine.last_campaign_time) > autonomous_engine.get_interval():
+                    await autonomous_engine.launch_campaign(db, traffic_gen, manager.broadcast)
+
+            facilities = db.scalars(select(Facility).limit(20)).all()
+            if not facilities:
+                continue
+
+            # Pick a random subset of facilities to scan each tick
+            sample = random.sample(facilities, min(3, len(facilities)))
+
+            for facility in sample:
+                # Get a representative cyber asset for this facility
+                asset = db.scalars(
+                    select(CyberAsset).where(CyberAsset.facility_id == facility.id).limit(1)
+                ).first()
+                if not asset:
+                    continue
+
+                event = traffic_gen.generate(facility.code, asset.asset_code)
+
+                payload = {
+                    "type": "ATTACK_DETECTED" if event.is_attack else "TRAFFIC_NORMAL",
+                    "facility_code": event.facility_code,
+                    "asset_code": event.asset_code,
+                    "label": event.label,
+                    "confidence": event.confidence,
+                    "is_attack": event.is_attack,
+                    "scenario": event.scenario,
+                    "timestamp": event.timestamp,
+                    "packet_features": event.packet_features,
+                }
+
+                if event.is_attack and event.confidence > 0.4:
+                    # Trigger state machine — compromise asset, create incident
+                    sm = AssetStateMachine(db)
+                    incident = sm.compromise_asset(asset, event.label, event.confidence)
+
+                    if incident:
+                        payload["incident_code"] = incident.code
+                        payload["incident_severity"] = incident.severity
+                        payload["auto_responded"] = incident.status == "CONTAINED"
+
+                    # Notify autonomous engine of ML detection
+                    await autonomous_engine.handle_detection(payload, db, manager.broadcast)
+
+                    # Schedule propagation after 8 seconds if not already propagated
+                    if facility.id not in propagated:
+                        propagated.add(facility.id)
+                        asyncio.create_task(
+                            _delayed_propagation(facility.id, event.label, event.confidence)
+                        )
+                else:
+                    # Normal traffic — if facility was previously attacked, recover it
+                    if facility.id in propagated and not traffic_gen._attack_injections.get(facility.code):
+                        sm = AssetStateMachine(db)
+                        sm.recover_facility(facility.id)
+                        propagated.discard(facility.id)
+                        payload["type"] = "FACILITY_RECOVERED"
+
+                await manager.broadcast(payload)
+
+            # 2. Dynamic Operational Twin Telemetry (every ~5 seconds)
+            if tick_count % 2 == 0:
+                vehicles = db.scalars(select(Vehicle)).all()
+                for v in vehicles:
+                    v.reported_latitude += random.uniform(-0.003, 0.003)
+                    v.reported_longitude += random.uniform(-0.003, 0.003)
+                    v.current_latitude = v.reported_latitude
+                    v.current_longitude = v.reported_longitude
+
+                # Dynamically advance order statuses for active simulation realism
+                ready_orders = db.scalars(
+                    select(Order)
+                    .where(Order.status.in_(["PAYMENT_CONFIRMED", "PROCESSING"]))
+                    .where(Order.cyber_status != "UNDER_ATTACK")
+                    .limit(2)
+                ).all()
+                for ro in ready_orders:
+                    ro.status = "IN_TRANSIT"
+
+                db.commit()
+                await manager.broadcast({
+                    "type": "FLEET_UPDATE",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "vehicles": [
+                        {"id": v.id, "code": v.code, "latitude": v.reported_latitude, "longitude": v.reported_longitude, "status": v.status, "integrity": v.gps_integrity}
+                        for v in vehicles
+                    ]
+                })
+
+        except Exception as e:
+            print(f"[LiveScanner] Error: {e}")
+        finally:
+            db.close()
+
+
+async def _delayed_propagation(facility_id: int, label: str, confidence: float):
+    """Waits 8 seconds then propagates the attack to remaining facility assets."""
+    await asyncio.sleep(8)
+    db = SessionLocal()
+    try:
+        AssetStateMachine(db).propagate_attack(facility_id, label, confidence)
+        await manager.broadcast({
+            "type": "PROPAGATION",
+            "facility_id": facility_id,
+            "label": label,
+            "message": f"Lateral movement detected — {label} spreading through facility network.",
+        })
+    except Exception as e:
+        print(f"[Propagation] Error: {e}")
+    finally:
+        db.close()
 
 
 @asynccontextmanager
@@ -21,11 +198,15 @@ async def lifespan(app: FastAPI):
         seed(db)
     finally:
         db.close()
+    # Start the live ML scanner as a background task
+    scanner_task = asyncio.create_task(live_scanner())
     yield
+    scanner_task.cancel()
 
 
 app = FastAPI(title="CyberSecureChain API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
 
 
 class TransitionRequest(BaseModel):
@@ -329,12 +510,132 @@ def incident_response(incident_id: int, request: ResponseAction, db: Session = D
         db.rollback(); raise HTTPException(status_code=404, detail=str(exc))
 
 
-@app.websocket("/ws/events")
-async def event_socket(socket: WebSocket):
-    await socket.accept()
+@app.websocket("/ws/live")
+async def live_socket(ws: WebSocket):
+    """Real-time WebSocket feed — streams every ML traffic detection event."""
+    await manager.connect(ws)
     try:
+        # Send a welcome handshake immediately
+        await ws.send_json({
+            "type": "CONNECTED",
+            "message": "Live IDS ML stream connected. Monitoring all facilities.",
+        })
         while True:
-            await socket.receive_text()
-            await socket.send_json({"type": "HEARTBEAT", "message": "Digital twin event stream connected"})
+            # Keep connection alive — client sends pings
+            await ws.receive_text()
     except WebSocketDisconnect:
-        return
+        manager.disconnect(ws)
+
+
+@app.websocket("/ws/events")
+async def event_socket(ws: WebSocket):
+    """Legacy endpoint — redirects to /ws/live for backward compatibility."""
+    await manager.connect(ws)
+    try:
+        await ws.send_json({"type": "HEARTBEAT", "message": "Digital twin event stream connected"})
+        while True:
+            await ws.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(ws)
+
+
+class InjectAttackRequest(BaseModel):
+    scenario: str
+    facility_code: str
+    duration_seconds: float = 60.0
+
+
+@app.post("/api/live/inject")
+def inject_live_attack(request: InjectAttackRequest, db: Session = Depends(get_db)):
+    """
+    Inject a live attack into the traffic generator for a specific facility.
+    This makes the ML model start seeing malicious packets from that facility,
+    triggering real-time detections, state changes, and WebSocket alerts.
+    """
+    facility = db.scalar(select(Facility).where(Facility.code == request.facility_code))
+    if not facility:
+        raise HTTPException(status_code=404, detail=f"Facility {request.facility_code} not found")
+    traffic_gen.inject_attack(request.facility_code, request.scenario, request.duration_seconds)
+    return {
+        "status": "INJECTED",
+        "facility_code": request.facility_code,
+        "scenario": request.scenario,
+        "duration_seconds": request.duration_seconds,
+        "message": f"Attack injection active. ML scanner will detect within ~3 seconds.",
+    }
+
+
+@app.delete("/api/live/inject/{facility_code}")
+def clear_live_attack(facility_code: str, db: Session = Depends(get_db)):
+    """Stop injecting attack traffic for a facility, allowing recovery."""
+    traffic_gen.clear_attack(facility_code)
+    return {"status": "CLEARED", "facility_code": facility_code}
+
+
+@app.get("/api/live/status")
+def live_status():
+    """Return the current live attack injection status for all facilities."""
+    attacks = traffic_gen.active_attacks()
+    return {
+        "connected_clients": len(manager.active),
+        "active_attacks": attacks,
+        "scanner_running": True,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Autonomous Red vs Blue Cyber Engine Endpoints
+# ---------------------------------------------------------------------------
+
+class SpeedRequest(BaseModel):
+    speed: str
+
+
+@app.get("/api/cyber/auto-defense/status")
+def get_auto_defense_status():
+    """Return autonomous adversary & SOAR status, metrics, and active campaign."""
+    return autonomous_engine.get_status()
+
+
+@app.post("/api/cyber/auto-defense/toggle-adversary")
+def toggle_auto_adversary():
+    """Toggle autonomous adversary (Red Team AI)."""
+    autonomous_engine.adversary_enabled = not autonomous_engine.adversary_enabled
+    return {"adversary_enabled": autonomous_engine.adversary_enabled}
+
+
+@app.post("/api/cyber/auto-defense/toggle-mitigation")
+def toggle_auto_mitigation():
+    """Toggle autonomous SOAR mitigation (Blue Team AI)."""
+    autonomous_engine.mitigation_enabled = not autonomous_engine.mitigation_enabled
+    return {"mitigation_enabled": autonomous_engine.mitigation_enabled}
+
+
+@app.post("/api/cyber/auto-defense/set-speed")
+def set_auto_defense_speed(request: SpeedRequest):
+    """Set autonomous cycle speed ('fast', 'normal', 'relaxed')."""
+    if request.speed in ("fast", "normal", "relaxed"):
+        autonomous_engine.speed = request.speed
+    return {"speed": autonomous_engine.speed}
+
+
+@app.post("/api/cyber/auto-defense/trigger-campaign")
+async def trigger_auto_campaign(db: Session = Depends(get_db)):
+    """Manually force the adversary AI to launch an attack campaign immediately."""
+    camp = await autonomous_engine.launch_campaign(db, traffic_gen, manager.broadcast)
+    return {"status": "LAUNCHED", "campaign": camp}
+
+
+@app.post("/api/cyber/auto-defense/trigger-defense")
+async def trigger_auto_defense(db: Session = Depends(get_db)):
+    """Manually trigger the SOAR auto-defender to execute mitigation playbooks."""
+    await autonomous_engine.execute_soar_defense(db, traffic_gen, manager.broadcast)
+    return {"status": "MITIGATED", "status_data": autonomous_engine.get_status()}
+
+
+@app.get("/api/cyber/live-packets")
+def get_live_packets():
+    """Return recently scanned network packets with full CIC-IDS2017 metrics for the visual HUD."""
+    return traffic_gen.get_recent_packets()
+
+

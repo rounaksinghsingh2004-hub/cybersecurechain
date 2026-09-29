@@ -9,6 +9,9 @@ export default defineConfig({
       '/ws': { target: 'ws://localhost:8000', ws: true } 
     } 
   },
+  build: {
+    cssMinify: false
+  },
   define: {
     'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || '')
   }
