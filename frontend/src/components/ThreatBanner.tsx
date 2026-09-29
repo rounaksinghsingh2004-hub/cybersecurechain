@@ -17,8 +17,6 @@ export function ThreatBanner() {
   const [campaignDismissed, setCampaignDismissed] = useState<string | null>(null)
   const navigate = useNavigate()
 
-  if (view !== 'cyber') return null
-
   const active = alerts.find(a => a.incident_code && !dismissed.includes(a.incident_code ?? ''))
 
   // Campaign popup — show when a new active campaign comes in
@@ -43,6 +41,8 @@ export function ThreatBanner() {
   useEffect(() => {
     if (!campScenario) setCampaignDismissed(null)
   }, [campScenario])
+
+  if (view !== 'cyber') return null
 
   const dismiss = () => {
     if (active?.incident_code) setDismissed(d => [...d, active.incident_code!])
