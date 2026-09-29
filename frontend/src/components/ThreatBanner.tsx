@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AlertTriangle, X, ShieldCheck, Zap, Skull, Database, ServerCrash, Bug } from 'lucide-react'
 import { useLiveStore } from '../stores/live-store'
+import { useAppStore } from '../stores/app-store'
 import { useNavigate } from 'react-router-dom'
 
 const SCENARIO_META: Record<string, { label: string; detail: string; color: string; Icon: any }> = {
@@ -11,9 +12,12 @@ const SCENARIO_META: Record<string, { label: string; detail: string; color: stri
 
 export function ThreatBanner() {
   const { alerts, activeCampaign } = useLiveStore()
+  const { view } = useAppStore()
   const [dismissed, setDismissed] = useState<string[]>([])
   const [campaignDismissed, setCampaignDismissed] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  if (view !== 'cyber') return null
 
   const active = alerts.find(a => a.incident_code && !dismissed.includes(a.incident_code ?? ''))
 

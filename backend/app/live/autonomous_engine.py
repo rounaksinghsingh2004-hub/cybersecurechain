@@ -144,7 +144,7 @@ class AutonomousDefenseEngine:
     """
 
     def __init__(self):
-        self.adversary_enabled = True
+        self.adversary_enabled = False
         self.mitigation_enabled = True
         self.speed = "normal"  # "fast": 8s, "normal": 20s, "relaxed": 35s
         self.last_campaign_time = 0.0

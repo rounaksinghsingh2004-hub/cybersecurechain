@@ -150,7 +150,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 ⚠ {alerts.length} ALERT{alerts.length > 1 ? 'S' : ''}
               </span>
             )}
-            <button className="reset-demo-btn" onClick={() => post('/api/cyber/auto-defense/trigger-defense')} style={{ background: '#42b7c2', color: '#000', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 11, fontWeight: 'bold', cursor: 'pointer' }}>
+            <button className="reset-demo-btn" onClick={() => { post('/api/cyber/auto-defense/trigger-defense'); useLiveStore.getState().clearAlerts() }} style={{ background: '#42b7c2', color: '#000', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 11, fontWeight: 'bold', cursor: 'pointer' }}>
               Reset Demo
             </button>
             <span className="safety">SAFE SIMULATION ONLY</span>
