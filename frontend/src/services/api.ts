@@ -1,4 +1,4 @@
-const base = import.meta.env.VITE_API_URL || ''
+const base = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://cybersecurechain-api.onrender.com'
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${base}${path}`, { headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) }, ...init })

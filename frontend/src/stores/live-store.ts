@@ -136,7 +136,8 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 function connectWebSocket() {
   if (ws && ws.readyState === WebSocket.OPEN) return
 
-  ws = new WebSocket('ws://localhost:8000/ws/live')
+  const wsUrl = window.location.hostname === 'localhost' ? 'ws://localhost:8000/ws/live' : 'wss://cybersecurechain-api.onrender.com/ws/live'
+  ws = new WebSocket(wsUrl)
 
   ws.onopen = () => {
     useLiveStore.setState({ connected: true })
