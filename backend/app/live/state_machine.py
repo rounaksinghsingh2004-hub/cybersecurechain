@@ -28,8 +28,13 @@ class AssetStateMachine:
         Mark an asset as compromised, freeze its facility's orders, log an event,
         and auto-create an Incident. Returns the Incident if newly created, else None.
         """
+        existing = self.db.scalar(select(Incident).where(
+            Incident.facility_code == (asset.facility.code if asset.facility else "UNKNOWN"),
+            Incident.status.notin_(["CONTAINED", "RECOVERED", "MITIGATED", "RESOLVED"])
+        ))
+
         if asset.compromised:
-            return None  # Already compromised, skip
+            return existing
 
         # 1. Flip the asset state
         asset.compromised = True
@@ -55,6 +60,9 @@ class AssetStateMachine:
             previous_state={"compromised": False},
             new_state={"compromised": True, "label": attack_label, "confidence": confidence},
         ))
+
+        if existing:
+            return existing
 
         # 4. Auto-create an Incident
         import random, string

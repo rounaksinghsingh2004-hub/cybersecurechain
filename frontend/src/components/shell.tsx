@@ -11,14 +11,45 @@ const slug = (label: string) => label.toLowerCase().replaceAll(' ', '-').replace
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { view, setView } = useAppStore()
-  const { connected, alerts } = useLiveStore()
+  const { connected, alerts, activeCampaign } = useLiveStore()
   const location = useLocation()
   const navigate = useNavigate()
   const nav = view === 'admin' ? admin : cyber
   const switchView = (next: View) => { setView(next); navigate(next === 'admin' ? '/admin/overview' : '/cyber/security-overview') }
 
+  const isRansomware = activeCampaign?.scenario === 'RANSOMWARE_IMPACT' && activeCampaign.stage !== 'MITIGATED'
+
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isRansomware ? 'ransomware-active' : ''}`}>
+      <style>{`
+        .ransomware-active main.workspace {
+          animation: glitch 0.5s infinite;
+          position: relative;
+        }
+        .ransomware-active main.workspace::after {
+          content: 'SYSTEM ENCRYPTED BY LOCKBIT 3.0 \\A PAY 50 BTC TO DECRYPT SUPPLY CHAIN';
+          white-space: pre-wrap;
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(20, 0, 0, 0.85);
+          color: #ff3333;
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          font-family: monospace;
+          font-size: 32px;
+          font-weight: bold;
+          backdrop-filter: blur(4px);
+          pointer-events: none;
+        }
+        @keyframes glitch {
+          0% { filter: hue-rotate(0deg) contrast(1); }
+          50% { filter: hue-rotate(90deg) contrast(2) invert(0.2); }
+          100% { filter: hue-rotate(0deg) contrast(1); }
+        }
+      `}</style>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark"><ShieldCheck size={20} /></div>
