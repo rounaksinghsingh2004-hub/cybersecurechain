@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react'
 import { Activity, Boxes, Building2, ChevronRight, CircleHelp, Cpu, Factory, Gauge, Map, Package, Radar, ShieldAlert, ShieldCheck, Truck, Users, Wifi, WifiOff, Zap } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LiveFeed } from './LiveFeed'
 import { ThreatBanner } from './ThreatBanner'
 import { useAppStore, type View } from '../stores/app-store'
 import { useLiveStore } from '../stores/live-store'
+import { post } from '../services/api'
 
 const admin = [{ label: 'Overview', icon: Gauge }, { label: 'Supply Chain', icon: Map }, { label: 'Facilities', icon: Building2 }, { label: 'Inventory', icon: Boxes }, { label: 'Products', icon: Package }, { label: 'Orders', icon: Package }, { label: 'Shipments', icon: Truck }, { label: 'Fleet', icon: Truck }, { label: 'Employees', icon: Users }, { label: 'Machines & Robots', icon: Cpu }, { label: 'IoT & OT', icon: Radar }, { label: 'Digital Twin', icon: Radar }]
 const cyber = [{ label: 'Auto Defense', icon: Zap }, { label: 'Security Overview', icon: ShieldCheck }, { label: 'Simulation', icon: Factory }, { label: 'Attack Surface', icon: Radar }, { label: 'Vulnerabilities', icon: ShieldAlert }, { label: 'Incidents', icon: Activity }, { label: 'Attack Paths', icon: Map }, { label: 'Risk', icon: Gauge }, { label: 'Resilience', icon: ShieldCheck }, { label: 'Controls', icon: ShieldCheck }, { label: 'What-If', icon: ChevronRight }, { label: 'Timeline', icon: Activity }]
@@ -14,11 +16,24 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { connected, alerts, activeCampaign } = useLiveStore()
   const location = useLocation()
   const navigate = useNavigate()
+  const [damage, setDamage] = useState(0)
+
   const nav = view === 'admin' ? admin : cyber
   const switchView = (next: View) => { setView(next); navigate(next === 'admin' ? '/admin/overview' : '/cyber/security-overview') }
 
   const showOverlay = view === 'admin' && activeCampaign?.stage !== 'MITIGATED'
   const scenario = showOverlay ? activeCampaign?.scenario : null
+
+  useEffect(() => {
+    if (!showOverlay) {
+      setDamage(0)
+      return
+    }
+    const timer = setInterval(() => {
+      setDamage(d => d + 45000 + Math.floor(Math.random() * 10000))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [showOverlay])
 
   let overlayClass = ''
   if (scenario === 'RANSOMWARE_IMPACT') overlayClass = 'attack-ransomware'
@@ -27,7 +42,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   else if (scenario) overlayClass = 'attack-general'
 
   return (
-    <div className={`app-shell ${overlayClass}`}>
+    <div className={`app-shell ${overlayClass}`} data-damage={damage.toLocaleString()}>
       <style>{`
         /* Shared Overlay Styles - Cover the whole fixed screen */
         .attack-ransomware::after,
@@ -52,7 +67,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         /* 1. Ransomware */
         .attack-ransomware { animation: glitch 0.5s infinite; }
         .attack-ransomware::after {
-          content: 'SYSTEM ENCRYPTED BY LOCKBIT 3.0 \\A PAY 50 BTC TO DECRYPT SUPPLY CHAIN';
+          content: 'SYSTEM ENCRYPTED BY LOCKBIT 3.0 \\A PAY 50 BTC TO DECRYPT SUPPLY CHAIN \\A \\A FINANCIAL DAMAGE: ₹' attr(data-damage);
           background: rgba(20, 0, 0, 0.85);
           color: #ff3333;
         }
@@ -60,14 +75,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
         /* 2. DDoS */
         .attack-ddos { animation: shake 0.2s infinite; filter: grayscale(0.8); }
         .attack-ddos::after {
-          content: '503 SERVICE UNAVAILABLE \\A CONNECTION TIMEOUT - OT NETWORK OFFLINE';
+          content: '503 SERVICE UNAVAILABLE \\A CONNECTION TIMEOUT - OT NETWORK OFFLINE \\A \\A FINANCIAL DAMAGE: ₹' attr(data-damage);
           background: rgba(0, 0, 0, 0.95);
           color: #fff;
         }
 
         /* 3. SQL Injection */
         .attack-sqli::after {
-          content: 'DATABASE COMPROMISED \\A EXFILTRATING CUSTOMER RECORDS...';
+          content: 'DATABASE COMPROMISED \\A EXFILTRATING CUSTOMER RECORDS... \\A \\A FINANCIAL DAMAGE: ₹' attr(data-damage);
           background: rgba(0, 20, 0, 0.9);
           color: #2ecc71;
           animation: blink 1s infinite;
@@ -75,7 +90,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         /* 4. General APT */
         .attack-general::after {
-          content: 'UNAUTHORIZED ACCESS DETECTED \\A APT LATERAL MOVEMENT IN PROGRESS';
+          content: 'UNAUTHORIZED ACCESS DETECTED \\A APT LATERAL MOVEMENT IN PROGRESS \\A \\A FINANCIAL DAMAGE: ₹' attr(data-damage);
           background: rgba(20, 10, 0, 0.9);
           color: #f39c12;
         }
@@ -135,6 +150,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 ⚠ {alerts.length} ALERT{alerts.length > 1 ? 'S' : ''}
               </span>
             )}
+            <button className="reset-demo-btn" onClick={() => post('/api/cyber/auto-defense/trigger-defense')} style={{ background: '#42b7c2', color: '#000', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 11, fontWeight: 'bold', cursor: 'pointer' }}>
+              Reset Demo
+            </button>
             <span className="safety">SAFE SIMULATION ONLY</span>
             <span className="avatar">RS</span>
           </div>
