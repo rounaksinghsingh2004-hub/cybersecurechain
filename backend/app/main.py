@@ -205,7 +205,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="CyberSecureChain API", version="0.1.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 
 
@@ -619,10 +619,14 @@ def set_auto_defense_speed(request: SpeedRequest):
     return {"speed": autonomous_engine.speed}
 
 
+class CampaignRequest(BaseModel):
+    scenario: Optional[str] = None
+
 @app.post("/api/cyber/auto-defense/trigger-campaign")
-async def trigger_auto_campaign(db: Session = Depends(get_db)):
+async def trigger_auto_campaign(req: Optional[CampaignRequest] = None, db: Session = Depends(get_db)):
     """Manually force the adversary AI to launch an attack campaign immediately."""
-    camp = await autonomous_engine.launch_campaign(db, traffic_gen, manager.broadcast)
+    scenario = req.scenario if req else None
+    camp = await autonomous_engine.launch_campaign(db, traffic_gen, manager.broadcast, forced_scenario=scenario)
     return {"status": "LAUNCHED", "campaign": camp}
 
 

@@ -29,6 +29,30 @@ ADVERSARY_PROFILES = [
 
 ATTACK_SCENARIOS = [
     {
+        "scenario": "DATABASE_EXFILTRATION",
+        "vector": "Web Attack - Sql Injection",
+        "description": "SQL Injection on legacy warehouse API attempting to exfiltrate inventory and shipping manifests",
+        "playbook": "PLAYBOOK_DB_ISOLATION",
+        "defensive_steps": [
+            "Detect SQLi payload via ML WAF inspection",
+            "Sever external connections to primary DB cluster",
+            "Failover warehouse reads to immutable read-replica",
+            "Force session invalidation for all active API keys",
+        ],
+    },
+    {
+        "scenario": "RANSOMWARE_IMPACT",
+        "vector": "Bot",
+        "description": "Lateral propagation of ransomware payload encrypting localized fulfillment records",
+        "playbook": "PLAYBOOK_RANSOMWARE_CONTAINMENT",
+        "defensive_steps": [
+            "Identify rapid file-encryption IO patterns via Endpoint ML",
+            "Isolate infected VLAN from Corporate and OT networks",
+            "Restore corrupted ledger blocks from verified backups",
+            "Reroute incoming truck deliveries to alternate hubs",
+        ],
+    },
+    {
         "scenario": "OT_DISRUPTION",
         "vector": "DDoS",
         "description": "High-volume SYN/UDP flood directed at warehouse programmable logic controllers (PLCs)",

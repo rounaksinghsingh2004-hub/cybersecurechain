@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Skull, ShieldAlert, Zap, RadioTower } from 'lucide-react';
+import { Skull, ShieldAlert, Zap, ServerCrash, Database, Bug } from 'lucide-react';
 import { post } from '../services/api';
 
 export function HackerRemote() {
   const [status, setStatus] = useState<string>('STANDBY');
   
-  const launchCampaign = async () => {
+  const launchCampaign = async (scenario?: string) => {
     setStatus('LAUNCHING...');
     try {
-      await post('/api/cyber/auto-defense/trigger-campaign');
+      await post('/api/cyber/auto-defense/trigger-campaign', scenario ? { scenario } : {});
       setStatus('CAMPAIGN ACTIVE');
       setTimeout(() => setStatus('STANDBY'), 3000);
     } catch (e: any) {
@@ -27,6 +27,22 @@ export function HackerRemote() {
     }
   };
 
+  const attackBtnStyle = {
+    backgroundColor: '#330000',
+    border: '2px solid #ff3333',
+    color: '#ff3333',
+    padding: '15px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+    textTransform: 'uppercase' as const
+  };
+
   return (
     <div style={{
       backgroundColor: '#0a0a0a', 
@@ -39,7 +55,7 @@ export function HackerRemote() {
       alignItems: 'center',
       justifyContent: 'center'
     }}>
-      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <Skull size={48} color="#ff3333" style={{ marginBottom: '10px' }} />
         <h1 style={{ fontSize: '24px', margin: 0, textTransform: 'uppercase', letterSpacing: '2px' }}>
           Red Team Remote
@@ -52,7 +68,7 @@ export function HackerRemote() {
         border: '1px solid #ff3333',
         padding: '15px',
         borderRadius: '5px',
-        marginBottom: '40px',
+        marginBottom: '30px',
         width: '100%',
         maxWidth: '300px',
         textAlign: 'center'
@@ -61,27 +77,27 @@ export function HackerRemote() {
         <b style={{ fontSize: '18px', animation: status === 'STANDBY' ? 'none' : 'pulse 1s infinite' }}>{status}</b>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', maxWidth: '300px' }}>
-        <button 
-          onClick={launchCampaign}
-          style={{
-            backgroundColor: '#330000',
-            border: '2px solid #ff3333',
-            color: '#ff3333',
-            padding: '20px',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            textTransform: 'uppercase'
-          }}
-        >
-          <Zap size={24} />
-          Inject Attack
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '300px' }}>
+        <div style={{ fontSize: '12px', color: '#ff8888', textTransform: 'uppercase', textAlign: 'center', marginBottom: '-5px' }}>Payload Select</div>
+        
+        <button onClick={() => launchCampaign('OT_DISRUPTION')} style={attackBtnStyle}>
+          <ServerCrash size={20} />
+          Inject DDoS (OT)
+        </button>
+
+        <button onClick={() => launchCampaign('DATABASE_EXFILTRATION')} style={attackBtnStyle}>
+          <Database size={20} />
+          SQL Injection
+        </button>
+
+        <button onClick={() => launchCampaign('RANSOMWARE_IMPACT')} style={attackBtnStyle}>
+          <Bug size={20} />
+          Deploy Malware
+        </button>
+
+        <button onClick={() => launchCampaign()} style={{...attackBtnStyle, backgroundColor: '#220000', borderStyle: 'dashed'}}>
+          <Zap size={20} />
+          Random APT Attack
         </button>
 
         <button 
