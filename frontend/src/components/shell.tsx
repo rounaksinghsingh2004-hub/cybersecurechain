@@ -17,22 +17,33 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const nav = view === 'admin' ? admin : cyber
   const switchView = (next: View) => { setView(next); navigate(next === 'admin' ? '/admin/overview' : '/cyber/security-overview') }
 
-  const isRansomware = activeCampaign?.scenario === 'RANSOMWARE_IMPACT' && activeCampaign.stage !== 'MITIGATED'
+  const activeCamp = activeCampaign?.stage !== 'MITIGATED' ? activeCampaign : null
+  const scenario = activeCamp?.scenario
+
+  let overlayClass = ''
+  if (scenario === 'RANSOMWARE_IMPACT') overlayClass = 'attack-ransomware'
+  else if (scenario === 'OT_DISRUPTION') overlayClass = 'attack-ddos'
+  else if (scenario === 'DATABASE_EXFILTRATION') overlayClass = 'attack-sqli'
+  else if (scenario) overlayClass = 'attack-general'
 
   return (
-    <div className={`app-shell ${isRansomware ? 'ransomware-active' : ''}`}>
+    <div className={`app-shell ${overlayClass}`}>
       <style>{`
-        .ransomware-active main.workspace {
-          animation: glitch 0.5s infinite;
+        /* Shared Overlay Styles */
+        .attack-ransomware main.workspace,
+        .attack-ddos main.workspace,
+        .attack-sqli main.workspace,
+        .attack-general main.workspace {
           position: relative;
         }
-        .ransomware-active main.workspace::after {
-          content: 'SYSTEM ENCRYPTED BY LOCKBIT 3.0 \\A PAY 50 BTC TO DECRYPT SUPPLY CHAIN';
+        
+        .attack-ransomware main.workspace::after,
+        .attack-ddos main.workspace::after,
+        .attack-sqli main.workspace::after,
+        .attack-general main.workspace::after {
           white-space: pre-wrap;
           position: absolute;
           top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(20, 0, 0, 0.85);
-          color: #ff3333;
           z-index: 9999;
           display: flex;
           align-items: center;
@@ -44,10 +55,53 @@ export function Shell({ children }: { children: React.ReactNode }) {
           backdrop-filter: blur(4px);
           pointer-events: none;
         }
+
+        /* 1. Ransomware */
+        .attack-ransomware main.workspace { animation: glitch 0.5s infinite; }
+        .attack-ransomware main.workspace::after {
+          content: 'SYSTEM ENCRYPTED BY LOCKBIT 3.0 \\A PAY 50 BTC TO DECRYPT SUPPLY CHAIN';
+          background: rgba(20, 0, 0, 0.85);
+          color: #ff3333;
+        }
+
+        /* 2. DDoS */
+        .attack-ddos main.workspace { animation: shake 0.2s infinite; opacity: 0.8; filter: grayscale(0.8); }
+        .attack-ddos main.workspace::after {
+          content: '503 SERVICE UNAVAILABLE \\A CONNECTION TIMEOUT - OT NETWORK OFFLINE';
+          background: rgba(0, 0, 0, 0.9);
+          color: #fff;
+          font-size: 28px;
+        }
+
+        /* 3. SQL Injection */
+        .attack-sqli main.workspace::after {
+          content: 'DATABASE COMPROMISED \\A EXFILTRATING CUSTOMER RECORDS...';
+          background: rgba(0, 20, 0, 0.85);
+          color: #2ecc71;
+          animation: blink 1s infinite;
+        }
+
+        /* 4. General APT */
+        .attack-general main.workspace::after {
+          content: 'UNAUTHORIZED ACCESS DETECTED \\A APT LATERAL MOVEMENT IN PROGRESS';
+          background: rgba(20, 10, 0, 0.85);
+          color: #f39c12;
+        }
+
         @keyframes glitch {
           0% { filter: hue-rotate(0deg) contrast(1); }
           50% { filter: hue-rotate(90deg) contrast(2) invert(0.2); }
           100% { filter: hue-rotate(0deg) contrast(1); }
+        }
+        @keyframes shake {
+          0% { transform: translate(1px, 1px) rotate(0deg); }
+          50% { transform: translate(-1px, -2px) rotate(-1deg); }
+          100% { transform: translate(1px, -1px) rotate(0deg); }
+        }
+        @keyframes blink {
+          0% { opacity: 1; }
+          50% { opacity: 0.4; }
+          100% { opacity: 1; }
         }
       `}</style>
       <aside className="sidebar">
