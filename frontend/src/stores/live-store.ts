@@ -127,24 +127,27 @@ export const useLiveStore = create<LiveState>((set, get) => ({
 }))
 
 // ---------------------------------------------------------------------------
-// WebSocket client — singleton, auto-reconnects every 5 s on disconnect
+// WebSocket client — singleton, auto-reconnects with exponential backoff
 // ---------------------------------------------------------------------------
 
 let ws: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectAttempts = 0
+const MAX_RECONNECT_DELAY = 30_000
 
 function connectWebSocket() {
-  if (ws && ws.readyState === WebSocket.OPEN) return
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return
 
-  const wsUrl = window.location.hostname === 'localhost' ? 'ws://localhost:8000/ws/live' : 'wss://cybersecurechain-api.onrender.com/ws/live'
-  ws = new WebSocket(wsUrl)
+  const wsUrl = window.location.hostname === 'localhost'
+    ? 'ws://localhost:8000/ws/live'
+    : 'wss://cybersecurechain-api.onrender.com/ws/live'
+
+  try { ws = new WebSocket(wsUrl) } catch { scheduleReconnect(); return }
 
   ws.onopen = () => {
     useLiveStore.setState({ connected: true })
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
+    reconnectAttempts = 0
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
     const ping = setInterval(() => {
       if (ws && ws.readyState === WebSocket.OPEN) ws.send('ping')
       else clearInterval(ping)
@@ -158,14 +161,26 @@ function connectWebSocket() {
     } catch {}
   }
 
-  ws.onclose = () => {
-    useLiveStore.setState({ connected: false })
-    reconnectTimer = setTimeout(connectWebSocket, 4_000)
-  }
+  ws.onclose = () => { useLiveStore.setState({ connected: false }); scheduleReconnect() }
+  ws.onerror = () => { ws?.close() }
+}
 
-  ws.onerror = () => {
-    ws?.close()
-  }
+function scheduleReconnect() {
+  if (reconnectTimer) return
+  const delay = Math.min(2_000 * Math.pow(1.5, reconnectAttempts), MAX_RECONNECT_DELAY)
+  reconnectAttempts++
+  reconnectTimer = setTimeout(() => { reconnectTimer = null; connectWebSocket() }, delay)
+}
+
+// Reconnect immediately when tab becomes visible (handles Render free-tier cold starts)
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && (!ws || ws.readyState !== WebSocket.OPEN)) {
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
+      reconnectAttempts = 0
+      connectWebSocket()
+    }
+  })
 }
 
 connectWebSocket()
