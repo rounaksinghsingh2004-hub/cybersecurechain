@@ -79,6 +79,14 @@ async def live_scanner():
                 if not active_attacks and (now - autonomous_engine.last_campaign_time) > autonomous_engine.get_interval():
                     await autonomous_engine.launch_campaign(db, traffic_gen, manager.broadcast)
 
+            # 1.5 Auto-mitigate expired campaigns
+            if autonomous_engine.current_campaign and autonomous_engine.current_campaign.get("stage") != "MITIGATED":
+                active_attacks = traffic_gen.active_attacks()
+                camp_fac = autonomous_engine.current_campaign.get("facility_code")
+                if camp_fac not in active_attacks:
+                    # The attack injection duration has expired, trigger SOAR automatically
+                    await autonomous_engine.execute_soar_defense(db, traffic_gen, manager.broadcast)
+
             facilities = db.scalars(select(Facility).limit(20)).all()
             if not facilities:
                 continue
