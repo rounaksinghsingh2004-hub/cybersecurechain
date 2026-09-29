@@ -409,6 +409,7 @@ class AutonomousDefenseEngine:
             "financial_saved_inr": camp["estimated_loss_inr"],
             "message": f"Autonomous SOAR neutralized threat at {facility_code}! Rerouted {orders_protected} orders to {fallback_code}.",
         })
+        self.current_campaign = None
 
 
 autonomous_engine = AutonomousDefenseEngine()
