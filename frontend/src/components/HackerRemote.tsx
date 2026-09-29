@@ -10,7 +10,7 @@ export function HackerRemote() {
     try {
       await post('/api/cyber/auto-defense/trigger-campaign', scenario ? { scenario } : {});
       setStatus('CAMPAIGN ACTIVE');
-      setTimeout(() => setStatus('STANDBY'), 3000);
+      setTimeout(() => setStatus('STANDBY'), 60000);
     } catch (e: any) {
       setStatus(`ERROR: ${e.message}`);
     }
