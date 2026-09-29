@@ -225,9 +225,12 @@ function Incidents() {
               <div>
                 <b>{i.summary}</b>
                 <p>{i.facility} · Status: <Status value={i.status} /></p>
-                <small>Applied: {i.actions.length ? i.actions.map((a: string, idx: number) => (
-                  <span key={idx} style={{display:'inline-block',background:'rgba(66,183,194,0.15)',border:'1px solid #42b7c2',borderRadius:4,padding:'1px 6px',margin:'2px 3px 2px 0',fontSize:11,color:'#42b7c2'}}>{a}</span>
-                )) : 'No response actions yet'}</small>
+                <small>Applied: {i.actions.length ? i.actions.map((a: any, idx: number) => {
+                  const label = typeof a === 'string' ? a : (a.action || 'UNKNOWN');
+                  return (
+                    <span key={idx} style={{display:'inline-block',background:'rgba(66,183,194,0.15)',border:'1px solid #42b7c2',borderRadius:4,padding:'1px 6px',margin:'2px 3px 2px 0',fontSize:11,color:'#42b7c2'}} title={typeof a === 'object' ? a.note : ''}>{label}</span>
+                  );
+                }) : 'No response actions yet'}</small>
               </div>
               <div className="incident-actions">
                 <select value={getAction(i.id)} onChange={e => setActions(prev => ({...prev, [i.id]: e.target.value}))}>
