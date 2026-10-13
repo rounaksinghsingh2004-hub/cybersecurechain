@@ -56,7 +56,7 @@ class AutonomousEngineTests(unittest.TestCase):
         loop.run_until_complete(
             autonomous_engine.execute_soar_defense(db, traffic_gen, mock_broadcast)
         )
-        self.assertEqual(autonomous_engine.current_campaign["stage"], "MITIGATED")
+        self.assertIsNone(autonomous_engine.current_campaign)
         self.assertNotIn("FC-TEST", traffic_gen.active_attacks())
         self.assertGreaterEqual(autonomous_engine.total_mitigated, 1)
 
