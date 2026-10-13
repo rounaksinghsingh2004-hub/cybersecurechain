@@ -104,7 +104,9 @@ class TrafficGenerator:
         bwd_pkts = random.randint(1, 20)
         fwd_len_mean = random.uniform(80, 600)
         return {
+            "Source Port": random.randint(1024, 65535),
             "Destination Port": port,
+            "Protocol": 6,  # TCP (most benign traffic)
             "Flow Duration": flow_dur,
             "Total Fwd Packets": fwd_pkts,
             "Total Backward Packets": bwd_pkts,
@@ -150,7 +152,9 @@ class TrafficGenerator:
         if scenario in ("ACCOUNT_COMPROMISE", "SSH-Patator", "FTP-Patator"):
             port = 22 if "SSH" in target_attack else 21
             base.update({
+                "Source Port": random.randint(1024, 65535),
                 "Destination Port": port,
+                "Protocol": 6,  # TCP
                 "Total Fwd Packets": random.randint(8, 25),
                 "Fwd Packet Length Mean": random.uniform(30, 90),
                 "Average Packet Size": random.uniform(40, 100),
@@ -160,7 +164,9 @@ class TrafficGenerator:
             })
         elif scenario in ("OT_DISRUPTION", "IOT_SPOOFING", "DDoS", "DoS Hulk"):
             base.update({
+                "Source Port": random.randint(1024, 65535),
                 "Destination Port": 80,
+                "Protocol": 17,  # UDP
                 "Total Fwd Packets": random.randint(500, 2000),
                 "Fwd Packet Length Mean": random.uniform(40, 75),
                 "Average Packet Size": random.uniform(50, 85),
@@ -170,7 +176,9 @@ class TrafficGenerator:
             })
         elif scenario in ("QR_TAMPERING", "PortScan"):
             base.update({
+                "Source Port": random.randint(1024, 65535),
                 "Destination Port": random.randint(1024, 65535),
+                "Protocol": 6,  # TCP SYN scan
                 "Total Fwd Packets": random.randint(1, 3),
                 "Fwd Packet Length Mean": random.uniform(0, 10),
                 "Average Packet Size": random.uniform(0, 15),
@@ -179,7 +187,9 @@ class TrafficGenerator:
             })
         else: # Web Attack
             base.update({
+                "Source Port": random.randint(1024, 65535),
                 "Destination Port": random.choice([80, 443, 8080]),
+                "Protocol": 6,  # TCP
                 "Total Fwd Packets": random.randint(4, 15),
                 "Fwd Packet Length Max": random.randint(900, 1500),
                 "Fwd Packet Length Mean": random.uniform(350, 800),
@@ -247,7 +257,9 @@ class TrafficGenerator:
             confidence=round(confidence, 3),
             is_attack=is_attack,
             packet_features={
+                "src_port": int(features.get("Source Port", 0)),
                 "dst_port": int(features.get("Destination Port", 80)),
+                "protocol": int(features.get("Protocol", 6)),
                 "flow_duration_us": int(features.get("Flow Duration", 0)),
                 "total_fwd_pkts": int(features.get("Total Fwd Packets", 0)),
                 "fwd_len_mean": round(float(features.get("Fwd Packet Length Mean", 0.0)), 1),

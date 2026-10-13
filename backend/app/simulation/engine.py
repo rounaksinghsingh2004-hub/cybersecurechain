@@ -124,21 +124,31 @@ class SimulationEngine:
                     if 'Destination Port' in X_pred.columns: X_pred['Destination Port'] = random.choice([22, 21])
                     if 'Total Fwd Packets' in X_pred.columns: X_pred['Total Fwd Packets'] = int(50 * variance)
                     if 'Flow Duration' in X_pred.columns: X_pred['Flow Duration'] = int(5000000 * variance)
+                    if 'Source Port' in X_pred.columns: X_pred['Source Port'] = random.randint(1024, 65535)
+                    if 'Protocol' in X_pred.columns: X_pred['Protocol'] = 6  # TCP
                 elif scenario == "OT_DISRUPTION" or scenario == "IOT_SPOOFING":
                     # DDoS / Bot type traffic
                     if 'Destination Port' in X_pred.columns: X_pred['Destination Port'] = 80
                     if 'Total Fwd Packets' in X_pred.columns: X_pred['Total Fwd Packets'] = int(1000 * variance)
                     if 'Flow Bytes/s' in X_pred.columns: X_pred['Flow Bytes/s'] = int(5000000 * variance)
+                    if 'Source Port' in X_pred.columns: X_pred['Source Port'] = random.randint(1024, 65535)
+                    if 'Protocol' in X_pred.columns: X_pred['Protocol'] = 17  # UDP (DDoS/flood)
                 elif scenario == "INVENTORY_MANIPULATION" or scenario == "SUPPLIER_COMPROMISE":
                     # Web Attack type traffic
                     if 'Destination Port' in X_pred.columns: X_pred['Destination Port'] = random.choice([80, 443])
                     if 'Fwd Packet Length Max' in X_pred.columns: X_pred['Fwd Packet Length Max'] = int(1500 * variance)
+                    if 'Source Port' in X_pred.columns: X_pred['Source Port'] = random.randint(1024, 65535)
+                    if 'Protocol' in X_pred.columns: X_pred['Protocol'] = 6  # TCP
                 elif scenario == "GPS_SPOOFING":
                     # DoS type traffic
                     if 'Destination Port' in X_pred.columns: X_pred['Destination Port'] = 80
                     if 'Flow Duration' in X_pred.columns: X_pred['Flow Duration'] = int(80000000 * variance)
+                    if 'Source Port' in X_pred.columns: X_pred['Source Port'] = random.randint(1024, 65535)
+                    if 'Protocol' in X_pred.columns: X_pred['Protocol'] = 17  # UDP
                 else:
                     if 'Destination Port' in X_pred.columns: X_pred['Destination Port'] = random.choice([8080, 443])
+                    if 'Source Port' in X_pred.columns: X_pred['Source Port'] = random.randint(1024, 65535)
+                    if 'Protocol' in X_pred.columns: X_pred['Protocol'] = 6  # TCP
                     
                 prediction = _CACHED_IDS_MODEL.predict(X_pred)[0]
                 return prediction
