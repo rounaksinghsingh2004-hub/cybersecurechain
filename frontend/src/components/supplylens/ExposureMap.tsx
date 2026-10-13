@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AlertTriangle, ArrowRight, Building2, CheckCircle2, Cpu, GitBranch, Package, RefreshCw, Server, ShieldAlert, Trash2 } from 'lucide-react'
 import { Metric, Panel, Status } from '../common'
 import { DataTable } from '../table'
-import { api, post } from '../../services/api'
+import { api, post, del } from '../../services/api'
 import { useAppStore } from '../../stores/app-store'
 
 function useData<T>(path: string, fallback: T) {
@@ -28,7 +28,7 @@ export function ExposureMap() {
   const handleDelete = async (id: number) => {
     setDeletingId(id)
     try {
-      await fetch(`http://localhost:8000/api/supplylens/deployments/${id}`, { method: 'DELETE' })
+      await del(`/api/supplylens/deployments/${id}`)
       reload()
     } catch {
       // Fallback

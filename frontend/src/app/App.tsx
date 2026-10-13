@@ -17,7 +17,7 @@ import { SupplierIntelligence } from '../components/supplylens/SupplierIntellige
 import { ExposureMap } from '../components/supplylens/ExposureMap'
 import { AICopilot } from '../components/supplylens/AICopilot'
 import { ScenarioLab } from '../components/supplylens/ScenarioLab'
-import { api, post } from '../services/api'
+import { api, post, del } from '../services/api'
 import { useAppStore } from '../stores/app-store'
 import { useLiveStore } from '../stores/live-store'
 
@@ -103,7 +103,7 @@ function Simulation() {
   const clearLive = async () => {
     if (!injectFacility) return
     try {
-      await fetch(`http://localhost:8000/api/live/inject/${injectFacility}`, { method: 'DELETE' })
+      await del(`/api/live/inject/${injectFacility}`)
       setInjectStatus(`✓ Attack cleared from ${injectFacility}. Recovery will begin.`)
     } catch (e: any) { setInjectStatus(`✗ ${e.message}`) }
   }

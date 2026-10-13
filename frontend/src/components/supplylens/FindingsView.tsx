@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AlertTriangle, CheckCircle2, Download, Filter, RefreshCw, ShieldAlert, Tag } from 'lucide-react'
 import { Metric, Panel, Status } from '../common'
 import { DataTable } from '../table'
-import { api } from '../../services/api'
+import { api, patch, base } from '../../services/api'
 import { useAppStore } from '../../stores/app-store'
 
 function useData<T>(path: string, fallback: T) {
@@ -36,11 +36,7 @@ export function FindingsView() {
   const handleStatusChange = async (findingId: number, nextStatus: string) => {
     setUpdatingId(findingId)
     try {
-      await fetch(`http://localhost:8000/api/supplylens/findings/${findingId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: nextStatus }),
-      })
+      await patch(`/api/supplylens/findings/${findingId}/status`, { status: nextStatus })
       reload()
     } catch {
       // Fallback
@@ -50,7 +46,7 @@ export function FindingsView() {
   }
 
   const exportCsv = () => {
-    window.open('http://localhost:8000/api/supplylens/reports/findings.csv', '_blank')
+    window.open(`${base}/api/supplylens/reports/findings.csv`, '_blank')
   }
 
   if (loading && !findings.length) return <Loading />
