@@ -9,6 +9,14 @@ import { TwinMap } from '../components/map'
 import { AutoDefenseCenter } from '../components/AutoDefenseCenter'
 import { Shell } from '../components/shell'
 import { DataTable } from '../components/table'
+import { SupplyLensOverview } from '../components/supplylens/SupplyLensOverview'
+import { SbomImports } from '../components/supplylens/SbomImports'
+import { ComponentInventory } from '../components/supplylens/ComponentInventory'
+import { FindingsView } from '../components/supplylens/FindingsView'
+import { SupplierIntelligence } from '../components/supplylens/SupplierIntelligence'
+import { ExposureMap } from '../components/supplylens/ExposureMap'
+import { AICopilot } from '../components/supplylens/AICopilot'
+import { ScenarioLab } from '../components/supplylens/ScenarioLab'
 import { api, post } from '../services/api'
 import { useAppStore } from '../stores/app-store'
 import { useLiveStore } from '../stores/live-store'
@@ -337,7 +345,69 @@ function CyberTable({ endpoint, name, columns }: { endpoint: string; name: strin
 function Loading() { return <div className="loading"><RefreshCw size={18} />Loading twin state...</div> }
 function ErrorState({ error, retry }: { error: string; retry: () => void }) { return <div className="error-state"><AlertTriangle size={20} /><b>Unable to load this view</b><p>{error}</p><button className="command-button" onClick={retry}>Try again</button></div> }
 
-function RoutedApp() { const location = useLocation(); const { view, setView } = useAppStore(); const parts = location.pathname.split('/').filter(Boolean); const activeView = parts[0] === 'cyber' ? 'cyber' : 'admin'; useEffect(() => setView(activeView), [activeView, setView]); const page = parts[0] === 'guide' ? 'guide' : parts[0] === 'details' ? 'details' : parts[1] || (activeView === 'admin' ? 'overview' : 'security-overview'); const component = useMemo(() => { if (page === 'guide') return <Guide />; if (page === 'details') return <EntityDetails />; if (activeView === 'admin') { if (page === 'overview') return <Overview />; if (page === 'fleet') return <Fleet />; if (page === 'digital-twin' || page === 'supply-chain') return <Twin />; const tables: Record<string, [string, string, any[]]> = { facilities: ['Facilities', '/api/facilities', [{ key: 'code', label: 'Facility' }, { key: 'type', label: 'Type' }, { key: 'city', label: 'Location' }, { key: 'status', label: 'Status', status: true }, { key: 'capacity', label: 'Capacity' }]], inventory: ['Inventory', '/api/inventory', [{ key: 'sku', label: 'SKU' }, { key: 'product', label: 'Product' }, { key: 'facility', label: 'Facility' }, { key: 'available', label: 'Available' }, { key: 'reserved', label: 'Reserved' }, { key: 'quarantined', label: 'Quarantined' }]], products: ['Products', '/api/products', [{ key: 'sku', label: 'SKU' }, { key: 'name', label: 'Product' }, { key: 'category', label: 'Category' }, { key: 'supplier', label: 'Supplier' }, { key: 'factory', label: 'Factory' }]], orders: ['Orders', '/api/orders', [{ key: 'number', label: 'Order' }, { key: 'customer', label: 'Customer' }, { key: 'origin', label: 'Origin' }, { key: 'destination', label: 'Destination' }, { key: 'status', label: 'Status', status: true }, { key: 'cyber_status', label: 'Cyber status', status: true }]], shipments: ['Shipments', '/api/shipments', [{ key: 'code', label: 'Shipment' }, { key: 'order', label: 'Order' }, { key: 'vehicle', label: 'Vehicle' }, { key: 'destination', label: 'Destination' }, { key: 'status', label: 'Status', status: true }, { key: 'integrity', label: 'Integrity', status: true }]], employees: ['Employees', '/api/employees', [{ key: 'code', label: 'Employee' }, { key: 'name', label: 'Name' }, { key: 'facility', label: 'Facility' }, { key: 'role', label: 'Role' }, { key: 'mfa', label: 'MFA', status: true }, { key: 'account_status', label: 'Account', status: true }]], 'machines-&-robots': ['Machines & Robots', '/api/machines', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'facility', label: 'Facility' }, { key: 'zone', label: 'Zone' }, { key: 'criticality', label: 'Criticality' }, { key: 'cyber_status', label: 'Cyber', status: true }]], 'iot-&-ot': ['IoT & OT', '/api/iot', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'facility', label: 'Facility' }, { key: 'zone', label: 'Zone' }, { key: 'network', label: 'Network' }, { key: 'cyber_status', label: 'Cyber', status: true }]], assets: ['Operational assets', '/api/cyber/assets', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'type', label: 'Type' }, { key: 'facility', label: 'Facility' }, { key: 'risk_level', label: 'Cyber risk', status: true }]] }; const target = tables[page]; return target ? <ResourceTable resource={target[0]} endpoint={target[1]} columns={target[2]} /> : <Overview /> } if (page === 'security-overview') return <SecurityOverview />; if (page === 'auto-defense') return <AutoDefenseCenter />; if (page === 'resilience') return <Resilience />; if (page === 'simulation') return <Simulation />; if (page === 'controls') return <Controls />; if (page === 'incidents') return <Incidents />; if (page === 'timeline') return <Timeline />; if (page === 'what-if') return <WhatIf />; const tables: Record<string, [string, string, any[]]> = { 'attack-surface': ['Attack surface', '/api/cyber/attack-surface', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'type', label: 'Surface' }, { key: 'facility', label: 'Facility' }, { key: 'risk_level', label: 'Risk', status: true }]], vulnerabilities: ['Vulnerabilities', '/api/cyber/vulnerabilities', [{ key: 'vulnerability', label: 'Vulnerability' }, { key: 'asset_name', label: 'Affected asset' }, { key: 'facility', label: 'Facility' }, { key: 'severity', label: 'Severity', status: true }, { key: 'recommended_control', label: 'Recommended control' }]], risk: ['Risk register', '/api/cyber/risk', [{ key: 'code', label: 'Asset' }, { key: 'risk', label: 'Score' }, { key: 'risk_level', label: 'Risk', status: true }, { key: 'why', label: 'Contributing factors' }]], 'attack-paths': ['Attack paths', '/api/cyber/assets', [{ key: 'code', label: 'Source asset' }, { key: 'facility', label: 'Facility' }, { key: 'vulnerabilities', label: 'Weaknesses' }, { key: 'controls', label: 'Controls' }]] }; const target = tables[page]; return target ? <CyberTable name={target[0]} endpoint={target[1]} columns={target[2]} /> : <SecurityOverview /> }, [activeView, page]); return <Shell>{component}<EntityDrawer /></Shell> }
+function RoutedApp() {
+  const location = useLocation();
+  const { view, setView } = useAppStore();
+  const parts = location.pathname.split('/').filter(Boolean);
+  const activeView = parts[0] === 'cyber' ? 'cyber' : parts[0] === 'supplylens' ? 'supplylens' : 'admin';
+  useEffect(() => setView(activeView), [activeView, setView]);
+  const page = parts[0] === 'guide' ? 'guide' : parts[0] === 'details' ? 'details' : parts[1] || (activeView === 'admin' ? 'overview' : activeView === 'cyber' ? 'security-overview' : 'sl-overview');
+
+  const component = useMemo(() => {
+    if (page === 'guide') return <Guide />;
+    if (page === 'details') return <EntityDetails />;
+
+    if (activeView === 'supplylens') {
+      if (page === 'sl-overview' || page === 'overview') return <SupplyLensOverview />;
+      if (page === 'sbom-imports') return <SbomImports />;
+      if (page === 'components') return <ComponentInventory />;
+      if (page === 'findings') return <FindingsView />;
+      if (page === 'suppliers') return <SupplierIntelligence />;
+      if (page === 'exposure-map') return <ExposureMap />;
+      if (page === 'ai-copilot') return <AICopilot />;
+      if (page === 'scenario-lab') return <ScenarioLab />;
+      return <SupplyLensOverview />;
+    }
+
+    if (activeView === 'admin') {
+      if (page === 'overview') return <Overview />;
+      if (page === 'fleet') return <Fleet />;
+      if (page === 'digital-twin' || page === 'supply-chain') return <Twin />;
+      const tables: Record<string, [string, string, any[]]> = {
+        facilities: ['Facilities', '/api/facilities', [{ key: 'code', label: 'Facility' }, { key: 'type', label: 'Type' }, { key: 'city', label: 'Location' }, { key: 'status', label: 'Status', status: true }, { key: 'capacity', label: 'Capacity' }]],
+        inventory: ['Inventory', '/api/inventory', [{ key: 'sku', label: 'SKU' }, { key: 'product', label: 'Product' }, { key: 'facility', label: 'Facility' }, { key: 'available', label: 'Available' }, { key: 'reserved', label: 'Reserved' }, { key: 'quarantined', label: 'Quarantined' }]],
+        products: ['Products', '/api/products', [{ key: 'sku', label: 'SKU' }, { key: 'name', label: 'Product' }, { key: 'category', label: 'Category' }, { key: 'supplier', label: 'Supplier' }, { key: 'factory', label: 'Factory' }]],
+        orders: ['Orders', '/api/orders', [{ key: 'number', label: 'Order' }, { key: 'customer', label: 'Customer' }, { key: 'origin', label: 'Origin' }, { key: 'destination', label: 'Destination' }, { key: 'status', label: 'Status', status: true }, { key: 'cyber_status', label: 'Cyber status', status: true }]],
+        shipments: ['Shipments', '/api/shipments', [{ key: 'code', label: 'Shipment' }, { key: 'order', label: 'Order' }, { key: 'vehicle', label: 'Vehicle' }, { key: 'destination', label: 'Destination' }, { key: 'status', label: 'Status', status: true }, { key: 'integrity', label: 'Integrity', status: true }]],
+        employees: ['Employees', '/api/employees', [{ key: 'code', label: 'Employee' }, { key: 'name', label: 'Name' }, { key: 'facility', label: 'Facility' }, { key: 'role', label: 'Role' }, { key: 'mfa', label: 'MFA', status: true }, { key: 'account_status', label: 'Account', status: true }]],
+        'machines-&-robots': ['Machines & Robots', '/api/machines', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'facility', label: 'Facility' }, { key: 'zone', label: 'Zone' }, { key: 'criticality', label: 'Criticality' }, { key: 'cyber_status', label: 'Cyber', status: true }]],
+        'iot-&-ot': ['IoT & OT', '/api/iot', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'facility', label: 'Facility' }, { key: 'zone', label: 'Zone' }, { key: 'network', label: 'Network' }, { key: 'cyber_status', label: 'Cyber', status: true }]],
+        assets: ['Operational assets', '/api/cyber/assets', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'type', label: 'Type' }, { key: 'facility', label: 'Facility' }, { key: 'risk_level', label: 'Cyber risk', status: true }]]
+      };
+      const target = tables[page];
+      return target ? <ResourceTable resource={target[0]} endpoint={target[1]} columns={target[2]} /> : <Overview />
+    }
+
+    if (page === 'security-overview') return <SecurityOverview />;
+    if (page === 'auto-defense') return <AutoDefenseCenter />;
+    if (page === 'resilience') return <Resilience />;
+    if (page === 'simulation') return <Simulation />;
+    if (page === 'controls') return <Controls />;
+    if (page === 'incidents') return <Incidents />;
+    if (page === 'timeline') return <Timeline />;
+    if (page === 'what-if') return <WhatIf />;
+    const tables: Record<string, [string, string, any[]]> = {
+      'attack-surface': ['Attack surface', '/api/cyber/attack-surface', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'type', label: 'Surface' }, { key: 'facility', label: 'Facility' }, { key: 'risk_level', label: 'Risk', status: true }]],
+      vulnerabilities: ['Vulnerabilities', '/api/cyber/vulnerabilities', [{ key: 'vulnerability', label: 'Vulnerability' }, { key: 'asset_name', label: 'Affected asset' }, { key: 'facility', label: 'Facility' }, { key: 'severity', label: 'Severity', status: true }, { key: 'recommended_control', label: 'Recommended control' }]],
+      risk: ['Risk register', '/api/cyber/risk', [{ key: 'code', label: 'Asset' }, { key: 'risk', label: 'Score' }, { key: 'risk_level', label: 'Risk', status: true }, { key: 'why', label: 'Contributing factors' }]],
+      'attack-paths': ['Attack paths', '/api/cyber/assets', [{ key: 'code', label: 'Source asset' }, { key: 'facility', label: 'Facility' }, { key: 'vulnerabilities', label: 'Weaknesses' }, { key: 'controls', label: 'Controls' }]]
+    };
+    const target = tables[page];
+    return target ? <CyberTable name={target[0]} endpoint={target[1]} columns={target[2]} /> : <SecurityOverview />;
+  }, [activeView, page]);
+
+  return <Shell>{component}<EntityDrawer /></Shell>;
+}
 
 import { HackerRemote } from '../components/HackerRemote'
 

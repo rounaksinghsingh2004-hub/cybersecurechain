@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Activity, Boxes, Building2, ChevronRight, CircleHelp, Cpu, Factory, Gauge, Map, Package, Radar, ShieldAlert, ShieldCheck, Truck, Users, Wifi, WifiOff, Zap } from 'lucide-react'
+import { Activity, Boxes, Box, Brain, Building2, ChevronRight, CircleHelp, Cpu, Factory, FileCode, Gauge, GitBranch, Map, Network, Package, Radar, RefreshCw, ShieldAlert, ShieldCheck, Truck, Users, Wifi, WifiOff, Zap } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LiveFeed } from './LiveFeed'
 import { ThreatBanner } from './ThreatBanner'
@@ -9,6 +9,7 @@ import { post } from '../services/api'
 
 const admin = [{ label: 'Overview', icon: Gauge }, { label: 'Supply Chain', icon: Map }, { label: 'Facilities', icon: Building2 }, { label: 'Inventory', icon: Boxes }, { label: 'Products', icon: Package }, { label: 'Orders', icon: Package }, { label: 'Shipments', icon: Truck }, { label: 'Fleet', icon: Truck }, { label: 'Employees', icon: Users }, { label: 'Machines & Robots', icon: Cpu }, { label: 'IoT & OT', icon: Radar }, { label: 'Digital Twin', icon: Radar }]
 const cyber = [{ label: 'Auto Defense', icon: Zap }, { label: 'Security Overview', icon: ShieldCheck }, { label: 'Simulation', icon: Factory }, { label: 'Attack Surface', icon: Radar }, { label: 'Vulnerabilities', icon: ShieldAlert }, { label: 'Incidents', icon: Activity }, { label: 'Attack Paths', icon: Map }, { label: 'Risk', icon: Gauge }, { label: 'Resilience', icon: ShieldCheck }, { label: 'Controls', icon: ShieldCheck }, { label: 'What-If', icon: ChevronRight }, { label: 'Timeline', icon: Activity }]
+const supplylens = [{ label: 'SL Overview', icon: Brain }, { label: 'SBOM Imports', icon: FileCode }, { label: 'Components', icon: Box }, { label: 'Findings', icon: ShieldAlert }, { label: 'Suppliers', icon: Network }, { label: 'Exposure Map', icon: GitBranch }, { label: 'AI Copilot', icon: Brain }, { label: 'Scenario Lab', icon: RefreshCw }]
 const slug = (label: string) => label.toLowerCase().replaceAll(' ', '-').replaceAll('&', '').replaceAll('  ', '-')
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -18,8 +19,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const [damage, setDamage] = useState(0)
 
-  const nav = view === 'admin' ? admin : cyber
-  const switchView = (next: View) => { setView(next); navigate(next === 'admin' ? '/admin/overview' : '/cyber/security-overview') }
+  const nav = view === 'admin' ? admin : view === 'cyber' ? cyber : supplylens
+  const switchView = (next: View) => {
+    setView(next)
+    if (next === 'admin') navigate('/admin/overview')
+    else if (next === 'cyber') navigate('/cyber/security-overview')
+    else navigate('/supplylens/sl-overview')
+  }
 
   const showOverlay = view === 'admin' && activeCampaign?.stage !== 'MITIGATED'
   const scenario = showOverlay ? activeCampaign?.scenario : null
@@ -120,6 +126,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className="view-switch">
           <button className={view === 'admin' ? 'selected' : ''} onClick={() => switchView('admin')}>ADMIN</button>
           <button className={view === 'cyber' ? 'selected' : ''} onClick={() => switchView('cyber')}>CYBER</button>
+          <button className={view === 'supplylens' ? 'selected' : ''} onClick={() => switchView('supplylens')} style={{fontSize:9,letterSpacing:'0.5px'}}>SUPPLY<br/>LENS</button>
         </div>
         <nav>
           {nav.map(item => {
@@ -138,7 +145,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <header className="topbar">
           <div>
             <span className="eyebrow">NEXORA COMMERCE &amp; LOGISTICS</span>
-            <h1>{view === 'admin' ? 'Operations Control Tower' : 'Cyber Resilience Center'}</h1>
+            <h1>{view === 'admin' ? 'Operations Control Tower' : view === 'cyber' ? 'Cyber Resilience Center' : 'SupplyLens AI — Software & Supplier Risk'}</h1>
           </div>
           <div className="top-actions">
             <span className={`ws-status ${connected ? 'online' : 'offline'}`}>

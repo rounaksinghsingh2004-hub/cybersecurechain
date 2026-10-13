@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type View = 'admin' | 'cyber'
+export type View = 'admin' | 'cyber' | 'supplylens'
 export type DrawerEntity = { title: string; data: Record<string, unknown> } | null
 
 type AppState = { view: View; setView: (view: View) => void; drawer: DrawerEntity; setDrawer: (drawer: DrawerEntity) => void }

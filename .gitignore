@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.example
 .venv/
 __pycache__/
 *.py[cod]
@@ -6,4 +8,5 @@ node_modules/
 dist/
 .pytest_cache/
 coverage/
-
+.vercel/
+*.tsbuildinfo

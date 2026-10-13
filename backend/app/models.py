@@ -200,3 +200,170 @@ class Incident(Base):
     facility_code: Mapped[str] = mapped_column(String(48))
     summary: Mapped[str] = mapped_column(Text)
     actions: Mapped[list] = mapped_column(JSON, default=list)
+
+
+# ---------------------------------------------------------------------------
+# SupplyLens AI Models — Software & Supplier Risk Intelligence Layer
+# ---------------------------------------------------------------------------
+
+class Supplier(Base):
+    __tablename__ = "suppliers"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(48), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(160), index=True)
+    category: Mapped[str] = mapped_column(String(64), default="SOFTWARE")
+    description: Mapped[str] = mapped_column(Text, default="")
+    business_owner: Mapped[str] = mapped_column(String(120), default="")
+    criticality: Mapped[int] = mapped_column(Integer, default=5)
+    tier: Mapped[str] = mapped_column(String(20), default="TIER_1")
+    assessment_status: Mapped[str] = mapped_column(String(32), default="PENDING_REVIEW")
+    contact_email: Mapped[str] = mapped_column(String(120), default="")
+    last_assessment_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    evidence_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    data_sensitivity: Mapped[str] = mapped_column(String(32), default="MEDIUM")
+    risk_score: Mapped[int] = mapped_column(Integer, default=0)
+    risk_level: Mapped[str] = mapped_column(String(20), default="LOW")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    components: Mapped[list["SoftwareComponent"]] = relationship(back_populates="supplier")
+
+
+class SoftwareProject(Base):
+    __tablename__ = "software_projects"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(48), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    description: Mapped[str] = mapped_column(Text, default="")
+    version: Mapped[str] = mapped_column(String(48), default="1.0.0")
+    repository_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    business_owner: Mapped[str] = mapped_column(String(120), default="")
+    facility_id: Mapped[int | None] = mapped_column(ForeignKey("facilities.id"), nullable=True)
+    criticality: Mapped[int] = mapped_column(Integer, default=5)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    facility: Mapped[Facility | None] = relationship()
+    components: Mapped[list["SoftwareComponent"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    import_jobs: Mapped[list["SbomImportJob"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+
+
+class SbomImportJob(Base):
+    __tablename__ = "sbom_import_jobs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("software_projects.id"), index=True)
+    filename: Mapped[str] = mapped_column(String(255))
+    format: Mapped[str] = mapped_column(String(32))  # CYCLONEDX_JSON, SPDX_JSON, MANUAL
+    status: Mapped[str] = mapped_column(String(32), default="PENDING")
+    component_count: Mapped[int] = mapped_column(Integer, default=0)
+    relationship_count: Mapped[int] = mapped_column(Integer, default=0)
+    warnings: Mapped[list] = mapped_column(JSON, default=list)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    project: Mapped[SoftwareProject] = relationship(back_populates="import_jobs")
+
+
+class SoftwareComponent(Base):
+    __tablename__ = "software_components"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("software_projects.id"), index=True)
+    supplier_id: Mapped[int | None] = mapped_column(ForeignKey("suppliers.id"), nullable=True)
+    name: Mapped[str] = mapped_column(String(160), index=True)
+    version: Mapped[str] = mapped_column(String(64))
+    ecosystem: Mapped[str] = mapped_column(String(48), default="generic")  # npm, pypi, maven, etc.
+    purl: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    license: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    direct: Mapped[bool] = mapped_column(Boolean, default=True)
+    scope: Mapped[str] = mapped_column(String(32), default="runtime")
+    risk_score: Mapped[int] = mapped_column(Integer, default=0)
+    risk_level: Mapped[str] = mapped_column(String(20), default="LOW")
+    raw_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    project: Mapped[SoftwareProject] = relationship(back_populates="components")
+    supplier: Mapped[Supplier | None] = relationship(back_populates="components")
+    findings: Mapped[list["ComponentFinding"]] = relationship(back_populates="component", cascade="all, delete-orphan")
+    deployments: Mapped[list["ComponentDeployment"]] = relationship(back_populates="component", cascade="all, delete-orphan")
+
+
+class ComponentDependency(Base):
+    __tablename__ = "component_dependencies"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("software_projects.id"), index=True)
+    parent_id: Mapped[int] = mapped_column(ForeignKey("software_components.id"), index=True)
+    child_id: Mapped[int] = mapped_column(ForeignKey("software_components.id"), index=True)
+    relationship_type: Mapped[str] = mapped_column(String(48), default="DEPENDS_ON")
+
+
+class ComponentFinding(Base):
+    __tablename__ = "component_findings"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    component_id: Mapped[int] = mapped_column(ForeignKey("software_components.id"), index=True)
+    vulnerability_id: Mapped[str] = mapped_column(String(64), index=True)
+    source: Mapped[str] = mapped_column(String(48), default="OSV")
+    severity: Mapped[str] = mapped_column(String(20), default="MEDIUM")
+    cvss_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    cisa_kev: Mapped[bool] = mapped_column(Boolean, default=False)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    details: Mapped[str] = mapped_column(Text, default="")
+    affected_versions: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    fixed_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="OPEN")  # OPEN, IN_TRIAGE, MITIGATED, ACCEPTED
+    confidence: Mapped[str] = mapped_column(String(32), default="HIGH")
+    risk_score: Mapped[int] = mapped_column(Integer, default=0)
+    evidence: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    component: Mapped[SoftwareComponent] = relationship(back_populates="findings")
+    mitigations: Mapped[list["MitigationAction"]] = relationship(back_populates="finding", cascade="all, delete-orphan")
+
+
+class ComponentDeployment(Base):
+    __tablename__ = "component_deployments"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    component_id: Mapped[int] = mapped_column(ForeignKey("software_components.id"), index=True)
+    service_name: Mapped[str] = mapped_column(String(120))
+    cyber_asset_id: Mapped[int | None] = mapped_column(ForeignKey("cyber_assets.id"), nullable=True)
+    operational_asset_id: Mapped[int | None] = mapped_column(ForeignKey("operational_assets.id"), nullable=True)
+    facility_id: Mapped[int | None] = mapped_column(ForeignKey("facilities.id"), nullable=True)
+    business_process: Mapped[str] = mapped_column(String(160), default="Fulfillment Operations")
+    mapping_type: Mapped[str] = mapped_column(String(32), default="VERIFIED")  # VERIFIED, USER_MAPPED, INFERRED, SYNTHETIC
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    component: Mapped[SoftwareComponent] = relationship(back_populates="deployments")
+    cyber_asset: Mapped[CyberAsset | None] = relationship()
+    operational_asset: Mapped[OperationalAsset | None] = relationship()
+    facility: Mapped[Facility | None] = relationship()
+
+
+class RiskSnapshot(Base):
+    __tablename__ = "risk_snapshots"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(32))  # PROJECT, COMPONENT, SUPPLIER, FINDING
+    entity_id: Mapped[int] = mapped_column(Integer)
+    risk_score: Mapped[int] = mapped_column(Integer)
+    risk_level: Mapped[str] = mapped_column(String(20))
+    factor_breakdown: Mapped[dict] = mapped_column(JSON, default=dict)
+    available_factors: Mapped[list] = mapped_column(JSON, default=list)
+    missing_factors: Mapped[list] = mapped_column(JSON, default=list)
+    methodology_version: Mapped[str] = mapped_column(String(32), default="v1.0-explainable")
+    rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class MitigationAction(Base):
+    __tablename__ = "mitigation_actions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    finding_id: Mapped[int | None] = mapped_column(ForeignKey("component_findings.id"), nullable=True)
+    component_id: Mapped[int | None] = mapped_column(ForeignKey("software_components.id"), nullable=True)
+    supplier_id: Mapped[int | None] = mapped_column(ForeignKey("suppliers.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(160))
+    action_type: Mapped[str] = mapped_column(String(48))
+    status: Mapped[str] = mapped_column(String(32), default="PROPOSED")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    finding: Mapped[ComponentFinding | None] = relationship(back_populates="mitigations")
+
