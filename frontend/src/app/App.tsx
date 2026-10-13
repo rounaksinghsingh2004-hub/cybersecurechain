@@ -469,15 +469,358 @@ function CyberTable({ endpoint, name, columns }: { endpoint: string; name: strin
 function Loading() { return <div className="loading"><RefreshCw size={18} />Loading twin state...</div> }
 function ErrorState({ error, retry }: { error: string; retry: () => void }) { return <div className="error-state"><AlertTriangle size={20} /><b>Unable to load this view</b><p>{error}</p><button className="command-button" onClick={retry}>Try again</button></div> }
 
-function SubTabBar({ tabs, active, onSelect }: { tabs: string[]; active: string; onSelect: (t: string) => void }) {
+function CyberSubNav({ tabs, active, onSelect }: { tabs: string[]; active: string; onSelect: (t: string) => void }) {
+  const { connected } = useLiveStore();
   return (
-    <div style={{ padding: '14px 28px 0', borderBottom: '1px solid #1e333b', background: '#0b161a', display: 'flex', gap: 8, alignItems: 'center' }}>
-      <div className="tabs" style={{ marginBottom: -1 }}>
-        {tabs.map(t => (
-          <button key={t} className={active === t ? 'active' : ''} onClick={() => onSelect(t)} style={{ cursor: 'pointer', padding: '8px 14px', fontSize: 11, fontWeight: active === t ? 650 : 500 }}>
-            {t}
+    <div className="cyber-subnav">
+      <div className="cyber-subnav-tabs">
+        {tabs.map((t, idx) => (
+          <button
+            key={t}
+            className={`cyber-subnav-tab ${active === t ? 'active' : ''}`}
+            onClick={() => onSelect(t)}
+          >
+            <span className="cyber-subnav-idx">[{String(idx + 1).padStart(2, '0')}]</span>
+            <span>{t}</span>
           </button>
         ))}
+      </div>
+      <div className="cyber-subnav-telemetry">
+        <span className="cyber-tech-pill live-pulse">
+          <span className="pulse-dot" />
+          {connected ? 'SOC Telemetry · Live' : 'SOC Telemetry · Offline'}
+        </span>
+        <span className="cyber-tech-pill" style={{ color: '#5ad8e5', borderColor: '#1b4b57' }}>
+          CIC-IDS2017 · 99.78%
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function UnifiedResilienceAndControls() {
+  const { data: cyber, loading: l1, error: e1, reload: reloadCyber } = useData<CyberOverview>('/api/cyber/overview', {
+    posture: 0,
+    critical_assets: 0,
+    high_risk_assets: 0,
+    active_incidents: 0,
+    external_connections: 0,
+    assets: [],
+  });
+  const { data: controls, loading: l2, error: e2, reload: reloadControls } = useData<any[]>('/api/cyber/controls', []);
+
+  if ((l1 || l2) && !controls.length) return <Loading />;
+  if (e1 || e2) return <ErrorState error={e1 || e2} retry={() => { reloadCyber(); reloadControls(); }} />;
+
+  const enabled = controls.filter(control => control.enabled).length;
+  const score = Math.min(100, Math.round(cyber.posture * 0.55 + (enabled / Math.max(1, controls.length)) * 45));
+  const factors = [
+    { factor: 'Detection capability', value: controls.some(c => c.code === 'MONITORING' && c.enabled) ? 85 : 45 },
+    { factor: 'Containment capability', value: controls.some(c => c.code === 'NETWORK_SEGMENTATION' && c.enabled) ? 90 : 40 },
+    { factor: 'Recovery capability', value: controls.some(c => c.code === 'BACKUP' && c.enabled) ? 88 : 35 },
+    { factor: 'Identity resilience', value: controls.some(c => c.code === 'MFA' && c.enabled) ? 90 : 30 },
+  ];
+
+  const toggle = async (id: number) => {
+    await post(`/api/cyber/controls/${id}/toggle`);
+    reloadControls();
+    reloadCyber();
+  };
+
+  return (
+    <div className="page">
+      <section className="page-intro">
+        <div>
+          <span className="eyebrow">BLUE TEAM READINESS & PREVENTION CONTROLS</span>
+          <h2>Security Controls & Preparedness Posture</h2>
+          <p>Controls directly alter reachability decisions in simulation and constrain lateral movement. Readiness factor score is derived in real time.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div className="posture">
+            <ShieldCheck size={18} />
+            <b>{score}</b>
+            <span>RESILIENCE</span>
+          </div>
+          <div className="posture" style={{ borderColor: '#235a66', background: '#0a1d22', color: '#68d4ea' }}>
+            <Shield size={18} />
+            <b>{cyber.posture}</b>
+            <span>POSTURE</span>
+          </div>
+          <button className="quiet-button" onClick={() => { reloadCyber(); reloadControls(); }}>
+            <RefreshCw size={14} /> Refresh
+          </button>
+        </div>
+      </section>
+
+      <div className="resilience-split-grid">
+        <Panel title="Readiness Factor Score Matrix">
+          <div style={{ padding: '4px 0' }}>
+            {factors.map(f => (
+              <div className="factor-row" key={f.factor}>
+                <span className="factor-name">
+                  <CheckCircle2 size={13} color={f.value >= 70 ? '#5ce0c0' : '#e8bd68'} />
+                  {f.factor}
+                </span>
+                <div className="factor-meter">
+                  <div className="factor-bar">
+                    <div className="factor-fill" style={{ width: `${f.value}%`, background: f.value >= 70 ? '#5ce0c0' : '#e8bd68' }} />
+                  </div>
+                  <span className="factor-score-val" style={{ color: f.value >= 70 ? '#5ce0c0' : '#e8bd68' }}>{f.value}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title={`Active Preventive Security Controls (${enabled}/${controls.length} Active)`}>
+          <div className="controls-grid" style={{ padding: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+            {controls.map(control => (
+              <section className="control-card" key={control.id} style={{ minHeight: 'auto' }}>
+                <div>
+                  <Status value={control.enabled ? 'ENABLED' : 'DISABLED'} />
+                  <h3 style={{ fontSize: 13, margin: '10px 0 5px' }}>{control.name}</h3>
+                  <p style={{ fontSize: 11, color: '#8aa2ab' }}>{control.description}</p>
+                </div>
+                <button
+                  className={control.enabled ? 'toggle on' : 'toggle'}
+                  onClick={() => toggle(control.id)}
+                  aria-label={`Toggle ${control.name}`}
+                >
+                  <i />
+                </button>
+              </section>
+            ))}
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function UnifiedIncidentOperations() {
+  const { data, loading: l1, error: e1, reload: reloadIncidents } = useData<any[]>('/api/cyber/incidents', []);
+  const { data: events, loading: l2, error: e2, reload: reloadEvents } = useData<any[]>('/api/events', []);
+  const [actions, setActions] = useState<Record<number, string>>({});
+  const [toast, setToast] = useState<{ id: number; action: string } | null>(null);
+  const [applying, setApplying] = useState<number | null>(null);
+  const [dismissed, setDismissed] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      reloadIncidents();
+      reloadEvents();
+    }, 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  if ((l1 || l2) && !data.length && !events.length) return <Loading />;
+  if (e1 || e2) return <ErrorState error={e1 || e2} retry={() => { reloadIncidents(); reloadEvents(); }} />;
+
+  const getAction = (id: number) => actions[id] || 'ISOLATE_ASSET';
+  const DONE = ['CONTAINED', 'RECOVERED', 'MITIGATED', 'RESOLVED'];
+  const active = data.filter(i => !DONE.includes(i.status) && !dismissed.has(i.id));
+  const resolved = data.filter(i => DONE.includes(i.status));
+
+  const respond = async (id: number) => {
+    const a = getAction(id);
+    setApplying(id);
+    setDismissed(prev => new Set([...prev, id]));
+    try {
+      await post(`/api/incidents/${id}/respond`, { action: a });
+      setToast({ id, action: a });
+      setTimeout(() => setToast(null), 4000);
+      reloadIncidents();
+      reloadEvents();
+    } finally {
+      setApplying(null);
+    }
+  };
+
+  const renderActions = (acts: any[]) => {
+    if (!acts?.length) return <span style={{ color: '#555' }}>No response actions yet</span>;
+    return acts.map((a: any, idx: number) => {
+      const label = typeof a === 'string' ? a : (a?.action || 'UNKNOWN');
+      const note = typeof a === 'object' ? a?.note : '';
+      const ts = typeof a === 'object' ? a?.timestamp : '';
+      return (
+        <span
+          key={idx}
+          title={[note, ts ? new Date(ts).toLocaleTimeString() : ''].filter(Boolean).join(' · ')}
+          style={{
+            display: 'inline-block',
+            background: 'rgba(66,183,194,0.12)',
+            border: '1px solid #42b7c2',
+            borderRadius: 4,
+            padding: '1px 7px',
+            margin: '2px 3px 2px 0',
+            fontSize: 11,
+            color: '#42b7c2',
+            cursor: 'default',
+          }}
+        >
+          {label}
+        </span>
+      );
+    });
+  };
+
+  return (
+    <div className="page">
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 20, right: 20, zIndex: 9999, background: '#0d2d1a', border: '1px solid #2ecc71',
+          borderRadius: 8, padding: '14px 20px', display: 'flex', gap: 12, alignItems: 'center',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.5)', animation: 'slideIn 0.3s ease'
+        }}>
+          <CheckCircle2 size={20} color="#2ecc71" />
+          <div>
+            <b style={{ color: '#2ecc71', display: 'block' }}>Action Applied</b>
+            <span style={{ color: '#aaa', fontSize: 13 }}>{toast.action.replaceAll('_', ' ')} → INC #{toast.id}</span>
+          </div>
+        </div>
+      )}
+
+      <section className="page-intro">
+        <div>
+          <span className="eyebrow">BLUE TEAM RESPONSE · SOC INCIDENTS & FORENSICS</span>
+          <h2>Incident Operations & Unified Audit Trail</h2>
+          <p>Live ML-IDS incidents appear automatically. Apply containment playbooks to isolate nodes and audit state changes.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <span className="cyber-tech-pill" style={{ color: active.length ? '#ff7676' : '#5ce0c0', borderColor: active.length ? '#7a2222' : '#1e4d44' }}>
+            {active.length} ACTIVE INCIDENT{active.length === 1 ? '' : 'S'}
+          </span>
+          <button className="quiet-button" onClick={() => { reloadIncidents(); reloadEvents(); }}>
+            <RefreshCw size={15} /> Refresh
+          </button>
+        </div>
+      </section>
+
+      {/* Active Incidents */}
+      <Panel title={`Active Incidents (${active.length})`}>
+        {!active.length ? (
+          <div className="empty">
+            <CheckCircle2 size={18} /> No active incidents. Launch an attack from Hacker Remote or Simulation Lab to test detection.
+          </div>
+        ) : (
+          <div className="incident-list">
+            {active.map(i => (
+              <div key={i.id} style={{ border: '1px solid #eb6969', borderRadius: 8, padding: 16, marginBottom: 12, background: 'rgba(235,105,105,0.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <span style={{ fontWeight: 'bold', fontSize: 15, color: '#eb6969' }}>{i.code}</span>
+                    <span style={{ marginLeft: 8 }}><Status value={i.severity} /></span>
+                    <span style={{ marginLeft: 8 }}><Status value={i.status} /></span>
+                  </div>
+                  <span style={{ fontSize: 11, color: '#666' }}>{i.facility}</span>
+                </div>
+                <p style={{ margin: '0 0 8px', color: '#c8d9db' }}>{i.summary}</p>
+                <div style={{ marginBottom: 10 }}>
+                  <small style={{ color: '#888', fontSize: 11 }}>Actions applied: </small>
+                  {renderActions(i.actions)}
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    value={getAction(i.id)}
+                    onChange={e => setActions(prev => ({ ...prev, [i.id]: e.target.value }))}
+                    style={{ background: '#0d1c21', border: '1px solid #2d4a52', color: '#c8d9db', borderRadius: 4, padding: '6px 10px', fontSize: 12, flex: 1 }}
+                  >
+                    {['ISOLATE_ASSET', 'DISABLE_ACCOUNT', 'BLOCK_CONNECTION', 'ENABLE_MFA', 'APPLY_SEGMENTATION', 'REDUCE_PRIVILEGE', 'INCREASE_MONITORING', 'RESTORE_BACKUP'].map(v => (
+                      <option key={v}>{v}</option>
+                    ))}
+                  </select>
+                  <button
+                    className="command-button"
+                    onClick={() => respond(i.id)}
+                    disabled={applying === i.id}
+                    style={{ opacity: applying === i.id ? 0.6 : 1, whiteSpace: 'nowrap' }}
+                  >
+                    {applying === i.id ? 'Applying...' : 'Apply action'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
+
+      {/* Resolved Log */}
+      {resolved.length > 0 && (
+        <Panel title={`Resolved Log (${resolved.length})`}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {resolved.map(i => (
+              <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(46,204,113,0.05)', border: '1px solid rgba(46,204,113,0.2)', borderRadius: 6 }}>
+                <div>
+                  <span style={{ fontWeight: 'bold', fontSize: 13, color: '#aaa' }}>{i.code}</span>
+                  <span style={{ marginLeft: 8, fontSize: 12, color: '#666' }}>{i.facility} · {i.summary}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  {renderActions(i.actions)}
+                  <Status value={i.status} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      {/* Unified Forensic Activity Audit */}
+      <Panel title="Forensic Event Stream">
+        <Activity events={events} />
+      </Panel>
+      <style>{`@keyframes slideIn { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }`}</style>
+    </div>
+  );
+}
+
+function UnifiedHostAttackSurface() {
+  const { data: surface, loading: l1, error: e1, reload: reloadSurface } = useData<any[]>('/api/cyber/attack-surface', []);
+  const { data: paths, loading: l2, error: e2, reload: reloadPaths } = useData<any[]>('/api/cyber/assets', []);
+  const { setDrawer } = useAppStore();
+
+  if ((l1 || l2) && !surface.length && !paths.length) return <Loading />;
+  if (e1 || e2) return <ErrorState error={e1 || e2} retry={() => { reloadSurface(); reloadPaths(); }} />;
+
+  return (
+    <div className="page">
+      <section className="page-intro">
+        <div>
+          <span className="eyebrow">SURFACE RECONNAISSANCE & LATERAL MOVEMENT</span>
+          <h2>Host Attack Surface & Lateral Propagation Paths</h2>
+          <p>Catalog of reachable network assets, exposure types, and traversal weaknesses mapped across the digital twin infrastructure.</p>
+        </div>
+        <button className="quiet-button" onClick={() => { reloadSurface(); reloadPaths(); }}>
+          <RefreshCw size={14} /> Refresh
+        </button>
+      </section>
+
+      <div style={{ display: 'grid', gap: 16 }}>
+        <Panel title={`Reachable Attack Surface Assets (${surface.length})`}>
+          <DataTable
+            rows={surface}
+            columns={[
+              { key: 'code', label: 'Asset' },
+              { key: 'name', label: 'Name' },
+              { key: 'type', label: 'Surface' },
+              { key: 'facility', label: 'Facility' },
+              { key: 'risk_level', label: 'Risk', status: true }
+            ]}
+            onRowClick={row => setDrawer({ title: String(row.code), data: row })}
+          />
+        </Panel>
+
+        <Panel title={`Lateral Propagation Paths & Vulnerability Profiles (${paths.length})`}>
+          <DataTable
+            rows={paths}
+            columns={[
+              { key: 'code', label: 'Source asset' },
+              { key: 'facility', label: 'Facility' },
+              { key: 'vulnerabilities', label: 'Weaknesses' },
+              { key: 'controls', label: 'Controls' }
+            ]}
+            onRowClick={row => setDrawer({ title: String(row.code), data: row })}
+          />
+        </Panel>
       </div>
     </div>
   );
@@ -489,21 +832,11 @@ function CommandCenter({ initialTab = 'Enterprise Cyber Posture' }: { initialTab
 
   return (
     <div>
-      <SubTabBar tabs={tabs} active={tab} onSelect={setTab} />
+      <CyberSubNav tabs={tabs} active={tab} onSelect={setTab} />
       {tab === 'Enterprise Cyber Posture' && <SecurityOverview />}
       {tab === 'Software Supply Chain Posture' && <SupplyLensOverview />}
-      {tab === 'Controls & Resilience' && (
-        <div>
-          <Resilience />
-          <Controls />
-        </div>
-      )}
-      {tab === 'Incident Operations & Audit' && (
-        <div>
-          <Incidents />
-          <Timeline />
-        </div>
-      )}
+      {tab === 'Controls & Resilience' && <UnifiedResilienceAndControls />}
+      {tab === 'Incident Operations & Audit' && <UnifiedIncidentOperations />}
     </div>
   );
 }
@@ -514,7 +847,7 @@ function UnifiedVulnerabilities({ initialTab = 'Software & Package CVEs' }: { in
 
   return (
     <div>
-      <SubTabBar tabs={tabs} active={tab} onSelect={setTab} />
+      <CyberSubNav tabs={tabs} active={tab} onSelect={setTab} />
       {tab === 'Software & Package CVEs' && <FindingsView />}
       {tab === 'Host & Infrastructure Weaknesses' && (
         <CyberTable
@@ -539,35 +872,9 @@ function UnifiedAttackSurface({ initialTab = 'Cyber-Physical Exposure Map' }: { 
 
   return (
     <div>
-      <SubTabBar tabs={tabs} active={tab} onSelect={setTab} />
+      <CyberSubNav tabs={tabs} active={tab} onSelect={setTab} />
       {tab === 'Cyber-Physical Exposure Map' && <ExposureMap />}
-      {tab === 'Host Attack Surface & Lateral Paths' && (
-        <div>
-          <CyberTable
-            name="Attack Surface"
-            endpoint="/api/cyber/attack-surface"
-            columns={[
-              { key: 'code', label: 'Asset' },
-              { key: 'name', label: 'Name' },
-              { key: 'type', label: 'Surface' },
-              { key: 'facility', label: 'Facility' },
-              { key: 'risk_level', label: 'Risk', status: true }
-            ]}
-          />
-          <div style={{ marginTop: 20 }}>
-            <CyberTable
-              name="Attack Paths"
-              endpoint="/api/cyber/assets"
-              columns={[
-                { key: 'code', label: 'Source asset' },
-                { key: 'facility', label: 'Facility' },
-                { key: 'vulnerabilities', label: 'Weaknesses' },
-                { key: 'controls', label: 'Controls' }
-              ]}
-            />
-          </div>
-        </div>
-      )}
+      {tab === 'Host Attack Surface & Lateral Paths' && <UnifiedHostAttackSurface />}
     </div>
   );
 }
@@ -578,10 +885,10 @@ function UnifiedSimulation({ initialTab = 'Supply Chain Scenario Lab' }: { initi
 
   return (
     <div>
-      <SubTabBar tabs={tabs} active={tab} onSelect={setTab} />
+      <CyberSubNav tabs={tabs} active={tab} onSelect={setTab} />
       {tab === 'Supply Chain Scenario Lab' && <ScenarioLab />}
       {tab === 'What-If Facility Resilience' && <WhatIf />}
-      {tab === 'Live Injection & Stress Test' && <Simulation />}
+      {tab === 'Direct Disruption Stress Test' && <Simulation />}
     </div>
   );
 }
@@ -592,7 +899,7 @@ function UnifiedInventory({ initialTab = 'Software Components (SBOM)' }: { initi
 
   return (
     <div>
-      <SubTabBar tabs={tabs} active={tab} onSelect={setTab} />
+      <CyberSubNav tabs={tabs} active={tab} onSelect={setTab} />
       {tab === 'Software Components (SBOM)' && <ComponentInventory />}
       {tab === 'Supplier Intelligence Register' && <SupplierIntelligence />}
       {tab === 'Import SBOM Manifests' && <SbomImports />}

@@ -113,7 +113,7 @@ export function AutoDefenseCenter() {
               {connected ? 'AUTONOMOUS CYBER DUEL ACTIVE' : 'CONNECTING TO SOAR...'}
             </span>
             <span className="ml-badge">
-              <Cpu size={12} /> CIC-IDS2017 ML (99.09% ACCURACY)
+              <Cpu size={12} /> CIC-IDS2017 ML (99.78% ACCURACY)
             </span>
           </div>
           <h2>Self-Defending Supply Chain Digital Twin</h2>

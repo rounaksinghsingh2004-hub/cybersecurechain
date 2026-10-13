@@ -198,3 +198,195 @@
 .flow-step { font-size: 10px; font-weight: 700; color: #7b9ba4; background: #081418; border: 1px solid #1a323a; padding: 3px 7px; border-radius: 3px; }
 .flow-step.active { color: #dff7f4; background: #174e54; border-color: #2b7d85; }
 
+/* ── TACTICAL CYBER HUD SUB-NAV & TELEMETRY ──────────────────────── */
+.cyber-subnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  background: #081216;
+  border-bottom: 1px solid #1a323a;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 16px;
+}
+.cyber-subnav::-webkit-scrollbar { display: none; }
+.cyber-subnav-tabs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 0;
+  flex-shrink: 0;
+}
+.cyber-subnav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #8da4ac;
+  padding: 7px 13px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+.cyber-subnav-tab:hover {
+  color: #d8edf0;
+  background: #0d2228;
+  border-color: #1e454f;
+}
+.cyber-subnav-tab.active {
+  color: #5ce0c0;
+  background: rgba(92, 224, 192, 0.08);
+  border: 1px solid rgba(92, 224, 192, 0.35);
+  box-shadow: 0 0 12px rgba(92, 224, 192, 0.12);
+}
+.cyber-subnav-idx {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 10px;
+  opacity: 0.75;
+  color: #5ce0c0;
+  letter-spacing: 0.5px;
+}
+.cyber-subnav-telemetry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 8px 0;
+}
+.cyber-tech-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 10px;
+  padding: 4px 9px;
+  border-radius: 3px;
+  border: 1px solid #1e3f4a;
+  background: #0a181e;
+  color: #7dd3c7;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.cyber-tech-pill.live-pulse {
+  border-color: #1f6458;
+  background: rgba(31, 100, 88, 0.2);
+  color: #5ce0c0;
+}
+.cyber-tech-pill .pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5ce0c0;
+  box-shadow: 0 0 6px #5ce0c0;
+  animation: pulse-green 1.5s infinite;
+}
+
+/* ── HUD STAT CARDS & MONOSPACE LABELS ───────────────────────────── */
+.hud-card-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.hud-card {
+  background: #0c1a20;
+  border: 1px solid #1f373f;
+  border-radius: 5px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.hud-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.hud-mono-tag {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  color: #688a94;
+  text-transform: uppercase;
+}
+.hud-score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.hud-score-number {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 26px;
+  font-weight: 700;
+  color: #5ce0c0;
+  line-height: 1;
+}
+.hud-score-max {
+  font-size: 11px;
+  color: #5c7982;
+}
+
+/* ── RESILIENCE & CONTROLS SPLIT VIEW ────────────────────────────── */
+.resilience-split-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(420px, 1.8fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 1024px) {
+  .resilience-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.factor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #1a3138;
+}
+.factor-row:last-child {
+  border-bottom: none;
+}
+.factor-name {
+  font-size: 12px;
+  color: #c4d7dc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.factor-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.factor-bar {
+  width: 90px;
+  height: 6px;
+  background: #11262d;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid #1c3d47;
+}
+.factor-fill {
+  height: 100%;
+  background: #5ce0c0;
+  border-radius: 3px;
+}
+.factor-score-val {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #5ce0c0;
+  min-width: 28px;
+  text-align: right;
+}
+
+
