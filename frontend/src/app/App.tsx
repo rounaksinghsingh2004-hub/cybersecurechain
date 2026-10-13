@@ -469,13 +469,144 @@ function CyberTable({ endpoint, name, columns }: { endpoint: string; name: strin
 function Loading() { return <div className="loading"><RefreshCw size={18} />Loading twin state...</div> }
 function ErrorState({ error, retry }: { error: string; retry: () => void }) { return <div className="error-state"><AlertTriangle size={20} /><b>Unable to load this view</b><p>{error}</p><button className="command-button" onClick={retry}>Try again</button></div> }
 
+function SubTabBar({ tabs, active, onSelect }: { tabs: string[]; active: string; onSelect: (t: string) => void }) {
+  return (
+    <div style={{ padding: '14px 28px 0', borderBottom: '1px solid #1e333b', background: '#0b161a', display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div className="tabs" style={{ marginBottom: -1 }}>
+        {tabs.map(t => (
+          <button key={t} className={active === t ? 'active' : ''} onClick={() => onSelect(t)} style={{ cursor: 'pointer', padding: '8px 14px', fontSize: 11, fontWeight: active === t ? 650 : 500 }}>
+            {t}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CommandCenter({ initialTab = 'Enterprise Cyber Posture' }: { initialTab?: string }) {
+  const [tab, setTab] = useState(initialTab);
+  const tabs = ['Enterprise Cyber Posture', 'Software Supply Chain Posture', 'Controls & Resilience', 'Incident Operations & Audit'];
+
+  return (
+    <div>
+      <SubTabBar tabs={tabs} active={tab} onSelect={setTab} />
+      {tab === 'Enterprise Cyber Posture' && <SecurityOverview />}
+      {tab === 'Software Supply Chain Posture' && <SupplyLensOverview />}
+      {tab === 'Controls & Resilience' && (
+        <div>
+          <Resilience />
+          <Controls />
+        </div>
+      )}
+      {tab === 'Incident Operations & Audit' && (
+        <div>
+          <Incidents />
+          <Timeline />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UnifiedVulnerabilities({ initialTab = 'Software & Package CVEs' }: { initialTab?: string }) {
+  const [tab, setTab] = useState(initialTab);
+  const tabs = ['Software & Package CVEs', 'Host & Infrastructure Weaknesses'];
+
+  return (
+    <div>
+      <SubTabBar tabs={tabs} active={tab} onSelect={setTab} />
+      {tab === 'Software & Package CVEs' && <FindingsView />}
+      {tab === 'Host & Infrastructure Weaknesses' && (
+        <CyberTable
+          name="Host Vulnerabilities"
+          endpoint="/api/cyber/vulnerabilities"
+          columns={[
+            { key: 'vulnerability', label: 'Vulnerability' },
+            { key: 'asset_name', label: 'Affected asset' },
+            { key: 'facility', label: 'Facility' },
+            { key: 'severity', label: 'Severity', status: true },
+            { key: 'recommended_control', label: 'Recommended control' }
+          ]}
+        />
+      )}
+    </div>
+  );
+}
+
+function UnifiedAttackSurface({ initialTab = 'Cyber-Physical Exposure Map' }: { initialTab?: string }) {
+  const [tab, setTab] = useState(initialTab);
+  const tabs = ['Cyber-Physical Exposure Map', 'Host Attack Surface & Lateral Paths'];
+
+  return (
+    <div>
+      <SubTabBar tabs={tabs} active={tab} onSelect={setTab} />
+      {tab === 'Cyber-Physical Exposure Map' && <ExposureMap />}
+      {tab === 'Host Attack Surface & Lateral Paths' && (
+        <div>
+          <CyberTable
+            name="Attack Surface"
+            endpoint="/api/cyber/attack-surface"
+            columns={[
+              { key: 'code', label: 'Asset' },
+              { key: 'name', label: 'Name' },
+              { key: 'type', label: 'Surface' },
+              { key: 'facility', label: 'Facility' },
+              { key: 'risk_level', label: 'Risk', status: true }
+            ]}
+          />
+          <div style={{ marginTop: 20 }}>
+            <CyberTable
+              name="Attack Paths"
+              endpoint="/api/cyber/assets"
+              columns={[
+                { key: 'code', label: 'Source asset' },
+                { key: 'facility', label: 'Facility' },
+                { key: 'vulnerabilities', label: 'Weaknesses' },
+                { key: 'controls', label: 'Controls' }
+              ]}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UnifiedSimulation({ initialTab = 'Supply Chain Scenario Lab' }: { initialTab?: string }) {
+  const [tab, setTab] = useState(initialTab);
+  const tabs = ['Supply Chain Scenario Lab', 'What-If Facility Resilience', 'Direct Disruption Stress Test'];
+
+  return (
+    <div>
+      <SubTabBar tabs={tabs} active={tab} onSelect={setTab} />
+      {tab === 'Supply Chain Scenario Lab' && <ScenarioLab />}
+      {tab === 'What-If Facility Resilience' && <WhatIf />}
+      {tab === 'Live Injection & Stress Test' && <Simulation />}
+    </div>
+  );
+}
+
+function UnifiedInventory({ initialTab = 'Software Components (SBOM)' }: { initialTab?: string }) {
+  const [tab, setTab] = useState(initialTab);
+  const tabs = ['Software Components (SBOM)', 'Supplier Intelligence Register', 'Import SBOM Manifests'];
+
+  return (
+    <div>
+      <SubTabBar tabs={tabs} active={tab} onSelect={setTab} />
+      {tab === 'Software Components (SBOM)' && <ComponentInventory />}
+      {tab === 'Supplier Intelligence Register' && <SupplierIntelligence />}
+      {tab === 'Import SBOM Manifests' && <SbomImports />}
+    </div>
+  );
+}
+
 function RoutedApp() {
   const location = useLocation();
   const { view, setView } = useAppStore();
   const parts = location.pathname.split('/').filter(Boolean);
   const activeView = parts[0] === 'admin' ? 'admin' : 'cyber';
   useEffect(() => setView(activeView), [activeView, setView]);
-  const page = parts[0] === 'guide' ? 'guide' : parts[0] === 'details' ? 'details' : parts[1] || (activeView === 'admin' ? 'overview' : 'security-overview');
+  const page = parts[0] === 'guide' ? 'guide' : parts[0] === 'details' ? 'details' : parts[1] || (activeView === 'admin' ? 'overview' : 'command-center');
 
   const component = useMemo(() => {
     if (page === 'guide') return <Guide />;
@@ -497,33 +628,68 @@ function RoutedApp() {
         assets: ['Operational assets', '/api/cyber/assets', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'type', label: 'Type' }, { key: 'facility', label: 'Facility' }, { key: 'risk_level', label: 'Cyber risk', status: true }]]
       };
       const target = tables[page];
-      return target ? <ResourceTable resource={target[0]} endpoint={target[1]} columns={target[2]} /> : <Overview />
+      return target ? <ResourceTable resource={target[0]} endpoint={target[1]} columns={target[2]} /> : <Overview />;
     }
 
-    if (page === 'security-overview') return <SecurityOverview />;
+    // 1. Auto Defense
     if (page === 'auto-defense') return <AutoDefenseCenter />;
-    if (page === 'resilience') return <Resilience />;
-    if (page === 'simulation') return <Simulation />;
-    if (page === 'controls') return <Controls />;
-    if (page === 'incidents') return <Incidents />;
-    if (page === 'timeline') return <Timeline />;
-    if (page === 'what-if') return <WhatIf />;
-    if (page === 'sl-overview' || page === 'supplylens') return <SupplyLensOverview />;
-    if (page === 'sbom-imports') return <SbomImports />;
-    if (page === 'components') return <ComponentInventory />;
-    if (page === 'findings') return <FindingsView />;
-    if (page === 'suppliers') return <SupplierIntelligence />;
-    if (page === 'exposure-map') return <ExposureMap />;
+
+    // 2. Command Center (Executive Security & Supply Chain Overview)
+    if (page === 'command-center' || page === 'overview' || page === 'security-overview') {
+      return <CommandCenter initialTab="Enterprise Cyber Posture" />;
+    }
+    if (page === 'sl-overview' || page === 'supplylens') {
+      return <CommandCenter initialTab="Software Supply Chain Posture" />;
+    }
+    if (page === 'controls' || page === 'resilience' || page === 'risk') {
+      return <CommandCenter initialTab="Controls & Resilience" />;
+    }
+    if (page === 'incidents' || page === 'timeline') {
+      return <CommandCenter initialTab="Incident Operations & Audit" />;
+    }
+
+    // 3. Vulnerability & Finding Triage
+    if (page === 'vulnerabilities') {
+      return <UnifiedVulnerabilities initialTab="Host & Infrastructure Weaknesses" />;
+    }
+    if (page === 'findings') {
+      return <UnifiedVulnerabilities initialTab="Software & Package CVEs" />;
+    }
+
+    // 4. Attack Surface & Exposure
+    if (page === 'exposure' || page === 'exposure-map') {
+      return <UnifiedAttackSurface initialTab="Cyber-Physical Exposure Map" />;
+    }
+    if (page === 'attack-surface' || page === 'attack-paths') {
+      return <UnifiedAttackSurface initialTab="Host Attack Surface & Lateral Paths" />;
+    }
+
+    // 5. Simulation & Scenario Lab
+    if (page === 'simulation-lab' || page === 'scenario-lab') {
+      return <UnifiedSimulation initialTab="Supply Chain Scenario Lab" />;
+    }
+    if (page === 'what-if') {
+      return <UnifiedSimulation initialTab="What-If Facility Resilience" />;
+    }
+    if (page === 'simulation') {
+      return <UnifiedSimulation initialTab="Direct Disruption Stress Test" />;
+    }
+
+    // 6. Software & Supplier Inventory
+    if (page === 'inventory' || page === 'components') {
+      return <UnifiedInventory initialTab="Software Components (SBOM)" />;
+    }
+    if (page === 'suppliers') {
+      return <UnifiedInventory initialTab="Supplier Intelligence Register" />;
+    }
+    if (page === 'sbom-imports') {
+      return <UnifiedInventory initialTab="Import SBOM Manifests" />;
+    }
+
+    // 7. AI Risk Copilot
     if (page === 'ai-copilot') return <AICopilot />;
-    if (page === 'scenario-lab') return <ScenarioLab />;
-    const tables: Record<string, [string, string, any[]]> = {
-      'attack-surface': ['Attack surface', '/api/cyber/attack-surface', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'type', label: 'Surface' }, { key: 'facility', label: 'Facility' }, { key: 'risk_level', label: 'Risk', status: true }]],
-      vulnerabilities: ['Vulnerabilities', '/api/cyber/vulnerabilities', [{ key: 'vulnerability', label: 'Vulnerability' }, { key: 'asset_name', label: 'Affected asset' }, { key: 'facility', label: 'Facility' }, { key: 'severity', label: 'Severity', status: true }, { key: 'recommended_control', label: 'Recommended control' }]],
-      risk: ['Risk register', '/api/cyber/risk', [{ key: 'code', label: 'Asset' }, { key: 'risk', label: 'Score' }, { key: 'risk_level', label: 'Risk', status: true }, { key: 'why', label: 'Contributing factors' }]],
-      'attack-paths': ['Attack paths', '/api/cyber/assets', [{ key: 'code', label: 'Source asset' }, { key: 'facility', label: 'Facility' }, { key: 'vulnerabilities', label: 'Weaknesses' }, { key: 'controls', label: 'Controls' }]]
-    };
-    const target = tables[page];
-    return target ? <CyberTable name={target[0]} endpoint={target[1]} columns={target[2]} /> : <SecurityOverview />;
+
+    return <CommandCenter initialTab="Enterprise Cyber Posture" />;
   }, [activeView, page]);
 
   return <Shell>{component}<EntityDrawer /></Shell>;

@@ -25,28 +25,13 @@ const admin: NavItem[] = [
 ]
 
 const cyber: NavItem[] = [
-  { label: 'Auto Defense', icon: Zap },
-  { label: 'Security Overview', icon: ShieldCheck },
-  { label: 'Simulation', icon: Factory },
-  { label: 'Attack Surface', icon: Radar },
-  { label: 'Vulnerabilities', icon: ShieldAlert },
-  { label: 'Incidents', icon: Activity },
-  { label: 'Attack Paths', icon: Map },
-  { label: 'Risk', icon: Gauge },
-  { label: 'Resilience', icon: ShieldCheck },
-  { label: 'Controls', icon: ShieldCheck },
-  { label: 'What-If', icon: ChevronRight },
-  { label: 'Timeline', icon: Activity },
-  // ── Unified SupplyLens AI Module ──
-  { label: 'SUPPLYLENS AI INTELLIGENCE', section: true },
-  { label: 'SupplyLens Overview', icon: Brain, path: '/cyber/sl-overview' },
-  { label: 'SBOM Imports', icon: FileCode, path: '/cyber/sbom-imports' },
-  { label: 'Components', icon: Box, path: '/cyber/components' },
-  { label: 'Findings', icon: ShieldAlert, path: '/cyber/findings' },
-  { label: 'Suppliers', icon: Network, path: '/cyber/suppliers' },
-  { label: 'Exposure Map', icon: GitBranch, path: '/cyber/exposure-map' },
-  { label: 'AI Copilot', icon: Brain, path: '/cyber/ai-copilot' },
-  { label: 'Scenario Lab', icon: RefreshCw, path: '/cyber/scenario-lab' },
+  { label: 'Auto Defense', icon: Zap, path: '/cyber/auto-defense' },
+  { label: 'Command Center', icon: ShieldCheck, path: '/cyber/command-center' },
+  { label: 'Vulnerabilities & Findings', icon: ShieldAlert, path: '/cyber/vulnerabilities' },
+  { label: 'Attack Surface & Exposure', icon: GitBranch, path: '/cyber/exposure' },
+  { label: 'Simulation & Scenario Lab', icon: RefreshCw, path: '/cyber/simulation-lab' },
+  { label: 'Software & Supplier Inventory', icon: Box, path: '/cyber/inventory' },
+  { label: 'AI Risk Copilot', icon: Brain, path: '/cyber/ai-copilot' },
 ]
 
 const slug = (label: string) => label.toLowerCase().replaceAll(' ', '-').replaceAll('&', '').replaceAll('  ', '-')
@@ -64,7 +49,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const switchView = (next: View) => {
     setView(next)
     if (next === 'admin') navigate('/admin/overview')
-    else navigate('/cyber/security-overview')
+    else navigate('/cyber/command-center')
   }
 
   const showOverlay = view === 'admin' && activeCampaign?.stage !== 'MITIGATED'
@@ -86,6 +71,26 @@ export function Shell({ children }: { children: React.ReactNode }) {
   else if (scenario === 'OT_DISRUPTION') overlayClass = 'attack-ddos'
   else if (scenario === 'DATABASE_EXFILTRATION') overlayClass = 'attack-sqli'
   else if (scenario) overlayClass = 'attack-general'
+
+  const isItemActive = (item: NavItem) => {
+    if (item.path && location.pathname === item.path) return true
+    if (item.path === '/cyber/command-center') {
+      return ['/cyber/command-center', '/cyber/security-overview', '/cyber/overview', '/cyber/sl-overview', '/cyber/risk', '/cyber/resilience', '/cyber/controls', '/cyber/incidents', '/cyber/timeline'].some(p => location.pathname.startsWith(p))
+    }
+    if (item.path === '/cyber/vulnerabilities') {
+      return ['/cyber/vulnerabilities', '/cyber/findings'].some(p => location.pathname.startsWith(p))
+    }
+    if (item.path === '/cyber/exposure') {
+      return ['/cyber/exposure', '/cyber/exposure-map', '/cyber/attack-surface', '/cyber/attack-paths'].some(p => location.pathname.startsWith(p))
+    }
+    if (item.path === '/cyber/simulation-lab') {
+      return ['/cyber/simulation-lab', '/cyber/scenario-lab', '/cyber/what-if', '/cyber/simulation'].some(p => location.pathname.startsWith(p))
+    }
+    if (item.path === '/cyber/inventory') {
+      return ['/cyber/inventory', '/cyber/components', '/cyber/suppliers', '/cyber/sbom-imports'].some(p => location.pathname.startsWith(p))
+    }
+    return item.path ? location.pathname.startsWith(item.path) : location.pathname === `/${view}/${slug(item.label)}`
+  }
 
   return (
     <div className={`app-shell ${overlayClass}`} data-damage={damage.toLocaleString()}>
@@ -152,20 +157,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
           50% { opacity: 0.2; }
           100% { opacity: 1; }
         }
-
-        .sidebar-section-divider {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          margin: 14px 10px 6px;
-          padding-top: 10px;
-          border-top: 1px solid #1f373e;
-          font-size: 8.5px;
-          font-weight: 700;
-          letter-spacing: 0.9px;
-          color: #5ce0c0;
-          text-transform: uppercase;
-        }
       `}</style>
       <aside className="sidebar">
         <div className="brand">
@@ -178,17 +169,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <button className={isCyber ? 'selected' : ''} onClick={() => switchView('cyber')}>CYBER</button>
         </div>
         <nav>
-          {nav.map((item, idx) => {
-            if (item.section) {
-              return (
-                <div key={idx} className="sidebar-section-divider">
-                  <span>{item.label}</span>
-                </div>
-              )
-            }
+          {nav.map((item) => {
             const Icon = item.icon
             const target = item.path || `/${view}/${slug(item.label)}`
-            const isActive = location.pathname === target || (item.path && location.pathname.startsWith(item.path.replace('/cyber/', '/supplylens/')))
+            const isActive = isItemActive(item)
             return (
               <Link className={isActive ? 'active' : ''} to={target} key={item.label}>
                 <Icon size={16} />
@@ -210,7 +194,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <header className="topbar">
           <div>
             <span className="eyebrow">NEXORA COMMERCE &amp; LOGISTICS</span>
-            <h1>{view === 'admin' ? 'Operations Control Tower' : 'Cyber Resilience & SupplyLens AI Intelligence'}</h1>
+            <h1>{view === 'admin' ? 'Operations Control Tower' : 'Cyber Resilience & SupplyLens AI Command'}</h1>
           </div>
           <div className="top-actions">
             <span className={`ws-status ${connected ? 'online' : 'offline'}`}>
@@ -218,7 +202,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               {connected ? 'LIVE' : 'OFFLINE'}
             </span>
             {alerts.length > 0 && (
-              <span className="alert-badge" onClick={() => navigate('/cyber/incidents')} style={{ cursor: 'pointer' }}>
+              <span className="alert-badge" onClick={() => navigate('/cyber/command-center')} style={{ cursor: 'pointer' }}>
                 ⚠ {alerts.length} ALERT{alerts.length > 1 ? 'S' : ''}
               </span>
             )}

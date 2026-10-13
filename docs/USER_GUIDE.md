@@ -38,14 +38,38 @@ https://frontend-mauve-chi-80.vercel.app
 
 ### Step 1.2 — Understand the Unified Navigation Modes
 
-At the top-left of the sidebar you will see **two primary mode-switch buttons**:
+### Step 1.2 — Understand the Streamlined Navigation Modes
 
-| Button | Mode | What it shows |
+At the top-left of the sidebar you will see **two balanced mode-switch buttons**:
+
+| Button | Mode | Key Categories |
 |---|---|---|
-| **ADMIN** | Operations Control Tower | Supply chain twin — facilities, inventory, orders, shipments, fleet, employees, machines, IoT & OT assets |
-| **CYBER** | Cyber Resilience & SupplyLens AI | Complete cyber defense suite: Security posture, ML-IDS auto defense, attack surface, vulnerabilities, risk register, What-If lab, plus **SupplyLens AI Software & Supplier Risk Intelligence** (SBOM imports, components, findings, supplier register, exposure map, AI copilot, scenario lab) |
+| **ADMIN** | Operations Control Tower | Operational twin — Overview, Facilities, Inventory, Products, Orders, Shipments, Fleet, Employees, Machines, IoT & OT, Digital Twin |
+| **CYBER** | Cyber Resilience & SupplyLens AI | Complete defense suite consolidated into **7 high-impact modules**: |
 
-Click either mode button to switch. In **CYBER** mode, the sidebar contains both operational cyber defense controls and the **SUPPLYLENS AI INTELLIGENCE** section separated by a clean visual divider.
+#### The 7 Consolidated CYBER Modules:
+
+1. **⚡ Auto Defense (`/cyber/auto-defense`):** Self-defending twin (Adversary AI vs. CIC-IDS2017 ML Classifier vs. SOAR Order Rerouting).
+2. **🛡️ Command Center (`/cyber/command-center`):** Unified executive posture dashboard:
+   - *Tab 1:* Enterprise Cyber Posture (Posture score, asset breakdown, risk distribution)
+   - *Tab 2:* Software Supply Chain Posture (Projects, SBOM packages, supplier risk, recent CVEs)
+   - *Tab 3:* Controls & Resilience (MFA, network segmentation, patch state, readiness score)
+   - *Tab 4:* Incident Operations & Audit (Active incidents, response actions, unified timeline)
+3. **🔍 Vulnerabilities & Findings (`/cyber/vulnerabilities`):**
+   - *Tab 1:* Software & Package CVEs (CVSS score, CISA KEV badges, status triage, CSV export)
+   - *Tab 2:* Host & Infrastructure Weaknesses (Cyber asset vulnerabilities, recommended controls)
+4. **🗺️ Attack Surface & Exposure (`/cyber/exposure`):**
+   - *Tab 1:* Cyber-Physical Exposure Map (Package → Service → Host → Facility → Orders propagation)
+   - *Tab 2:* Host Attack Surface & Lateral Paths (Entry points, exposed assets, lateral movement paths)
+5. **🧪 Simulation & Scenario Lab (`/cyber/simulation-lab`):**
+   - *Tab 1:* Supply Chain Scenario Lab (Vendor bankruptcy, critical CVE exploit, SolarWinds SBOM tampering)
+   - *Tab 2:* What-If Facility Resilience (Baseline vs. Hardened resilience comparison, revenue loss)
+   - *Tab 3:* Direct Disruption Stress Test (Live attack injection, killchain execution, blast radius)
+6. **📦 Software & Supplier Inventory (`/cyber/inventory`):**
+   - *Tab 1:* Software Components (SBOM packages, PURL ecosystem inference, live OSV enrichment)
+   - *Tab 2:* Supplier Intelligence Register (Vendor risk ratings, assessment status, Add Supplier modal)
+   - *Tab 3:* Import SBOM Manifests (CycloneDX / SPDX JSON upload and paste form)
+7. **🤖 AI Risk Copilot (`/cyber/ai-copilot`):** Grounded decision support for natural language risk queries with evidence tracing and non-LLM fallback.
 
 ### Step 1.3 — Live Event Feed
 
