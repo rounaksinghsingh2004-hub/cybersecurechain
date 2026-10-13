@@ -339,7 +339,131 @@ function Resilience() { const { data: cyber, loading, error, reload } = useData<
 
 function EntityDetails() { const { drawer } = useAppStore(); if (!drawer) return <div className="page"><section className="page-intro"><div><span className="eyebrow">ENTITY INSPECTION</span><h2>No entity selected</h2><p>Select a table row or map marker, then use Open full details.</p></div></section></div>; return <div className="page"><section className="page-intro"><div><span className="eyebrow">FULL ENTITY INSPECTION</span><h2>{drawer.title}</h2><p>Data shown here is the same record used by the corresponding operational or cyber view.</p></div></section><Panel title="Current modeled state"><div className="detail-grid">{Object.entries(drawer.data).map(([key, value]) => <div key={key}><span>{key.replaceAll('_', ' ')}</span><b>{typeof value === 'object' ? JSON.stringify(value) : String(value ?? '—')}</b></div>)}</div></Panel></div> }
 
-function Guide() { const timeline = [{ week: '1–7 Aug', title: 'Architecture and workspace', detail: 'Defined the NEXORA digital-twin architecture, React/FastAPI structure, and Docker/local runtime.' }, { week: '8–14 Aug', title: 'Relational operational twin', detail: 'Modeled facilities, products, inventory, orders, shipments, vehicles, employees, and operational assets with deterministic seed data.' }, { week: '15–21 Aug', title: 'Operational workflows', detail: 'Implemented inventory reservation, validated order transitions, event recording, map projections, and facility-linked operations.' }, { week: '22–28 Aug', title: 'Cyber resilience model', detail: 'Added derived cyber assets, transparent risk calculation, controls, attack paths, and safe simulation snapshots.' }, { week: '29 Aug–4 Sep', title: 'Control tower and SOC', detail: 'Built Admin/Cyber navigation, maps, tables, drawers, timelines, Red Team simulation, and Blue Team response.' }, { week: '5–8 Sep', title: 'Verification and documentation', detail: 'Added What-If comparison, domain tests, Docker setup, API documentation, and final integration checks.' }, { week: '12 Sep', title: 'Real-time AI/ML Integration', detail: 'Replaced static mock rules with real-time Random Forest predictions trained on the genuine CIC-IDS2017 dataset.' }, { week: '29 Sep', title: 'Autonomous Red vs Blue Cyber Engine', detail: 'Added self-defending digital twin: adversary AI launches real PCAP-verified attacks, CIC-IDS2017 ML detects them, SOAR auto-mitigates with order rerouting.' }]; return <div className="page"><section className="page-intro"><div><span className="eyebrow">PROJECT INFORMATION</span><h2>About CyberSecureChain</h2><p>A safe, fictional supply-chain digital twin for NEXORA Commerce & Logistics. It connects operations, cyber analysis, and controlled response workflows in one model.</p></div></section><section className="guide-grid"><Panel title="Project owner"><div className="about-copy"><b>Made by Rounak Singh</b><span>2430040169</span><span>B.Tech CSE Cyber Security</span></div></Panel><Panel title="Mentor"><div className="about-copy"><b>Mr. Ravindra Kumar Saini</b><span>Project Guide & Mentor</span></div></Panel><Panel title="Safety boundary"><div className="about-copy"><b>Simulation only</b><span>No scanning, credential use, malicious traffic, external targets, or real exploitation.</span></div></Panel></section><Panel title="Dynamic AI/ML Integration Engine"><div className="about-copy"><b>Real-time Predictive Analytics</b><p style={{marginTop: 5}}>The simulation engine no longer uses static mathematical rules to calculate severity. Instead, it relies on two real-time Artificial Intelligence models trained on massive real-world datasets:</p><ul style={{paddingLeft: 20, marginTop: 8}}><li><b>Intrusion Detection System (IDS) Model:</b> Trained on the actual CIC-IDS2017 PCAP dataset. During a simulation, the engine synthesizes real-time network flow characteristics based on the scenario and feeds them to the Random Forest model to instantly predict and classify the active network attack (e.g. DDoS, Bot, FTP-Patator).</li><li><b>Business Impact Regression Model:</b> Trained to predict non-linear supply-chain impacts. It processes live asset and operational telemetry during propagation to dynamically calculate estimated `downtime_minutes` and `estimated_revenue_loss`. Output varies dramatically based on real-time flux in order volumes and containment rules.</li></ul></div></Panel><Panel title="How to use the demo"><ol className="guide-steps"><li>Use Admin to inspect the linked facility, inventory, order, shipment, vehicle, and digital-twin state.</li><li>Switch to Cyber to inspect the derived attack surface, risk, and control posture.</li><li>Launch a safe Red Team scenario, then use Blue Team response actions and controls.</li><li>Open What-If to compare the current environment against the hardened control set.</li></ol></Panel><Panel title="Project timeline"><div className="project-timeline">{timeline.map(item => <div key={item.week}><span>{item.week}</span><section><b>{item.title}</b><p>{item.detail}</p></section></div>)}</div></Panel></div> }
+function Guide() {
+  const timeline = [
+    { week: '1–7 Aug', title: 'Architecture and workspace', detail: 'Defined the NEXORA digital-twin architecture, React/FastAPI structure, and Docker/local runtime.' },
+    { week: '8–14 Aug', title: 'Relational operational twin', detail: 'Modeled facilities, products, inventory, orders, shipments, vehicles, employees, and operational assets with deterministic seed data.' },
+    { week: '15–21 Aug', title: 'Operational workflows', detail: 'Implemented inventory reservation, validated order transitions, event recording, map projections, and facility-linked operations.' },
+    { week: '22–28 Aug', title: 'Cyber resilience model', detail: 'Added derived cyber assets, transparent risk calculation, controls, attack paths, and safe simulation snapshots.' },
+    { week: '29 Aug–4 Sep', title: 'Control tower and SOC', detail: 'Built Admin/Cyber navigation, maps, tables, drawers, timelines, Red Team simulation, and Blue Team response.' },
+    { week: '5–8 Sep', title: 'Verification and documentation', detail: 'Added What-If comparison, domain tests, Docker setup, API documentation, and final integration checks.' },
+    { week: '12 Sep', title: 'Real-time AI/ML Integration', detail: 'Replaced static mock rules with real-time Random Forest predictions trained on the genuine CIC-IDS2017 dataset.' },
+    { week: '29 Sep', title: 'Autonomous Red vs Blue Cyber Engine', detail: 'Added self-defending digital twin: adversary AI launches real PCAP-verified attacks, CIC-IDS2017 ML detects them, SOAR auto-mitigates with order rerouting.' },
+    { week: '6 Oct', title: '80-Feature Full-Scale ML Retraining', detail: 'Retrained Random Forest on 100% of CIC-IDS2017 (2.83M records) with all 14 attack classes plus Source Port & Protocol, achieving 99.78% multi-class accuracy.' },
+    { week: '14 Oct', title: 'SupplyLens AI Module Integration', detail: 'Integrated software & supplier supply chain risk intelligence: CycloneDX & SPDX SBOM ingestion, live OSV.dev and CISA KEV enrichment, deterministic 6-factor risk scoring, cyber-physical propagation mapping, and zero-hallucination AI Risk Copilot.' }
+  ]
+
+  return (
+    <div className="page">
+      <section className="page-intro">
+        <div>
+          <span className="eyebrow">ACADEMIC PBL PROJECT · MANIPAL UNIVERSITY JAIPUR</span>
+          <h2>CyberSecureChain with SupplyLens AI</h2>
+          <p>
+            A cybersecurity-driven supply chain digital twin with AI-assisted software and supplier risk intelligence.
+            Modeled for NEXORA Commerce & Logistics to connect physical operations, real-time intrusion detection, and upstream software dependency risk in one unified platform.
+          </p>
+        </div>
+      </section>
+
+      <section className="guide-grid">
+        <Panel title="Project owner">
+          <div className="about-copy">
+            <b>Rounak Singh</b>
+            <span>Registration: 2430040169</span>
+            <span>B.Tech CSE (Cyber Security)</span>
+            <span>Manipal University Jaipur</span>
+          </div>
+        </Panel>
+        <Panel title="Faculty Guide & Mentor">
+          <div className="about-copy">
+            <b>Mr. Ravindra Kumar Saini</b>
+            <span>Project Guide & Mentor</span>
+            <span>Department of Computer Science & Engineering</span>
+          </div>
+        </Panel>
+        <Panel title="Safety boundary">
+          <div className="about-copy">
+            <b>Safe Simulation Only</b>
+            <span>No real scanning, credential use, malicious traffic, external targets, or unauthorized exploitation. All scenarios run in isolated in-memory digital twin snapshots.</span>
+          </div>
+        </Panel>
+      </section>
+
+      <Panel title="SupplyLens AI: Software & Supplier Risk Intelligence">
+        <div className="about-copy">
+          <b>End-to-End Cyber-Physical Dependency Modeling</b>
+          <p style={{ marginTop: 6, lineHeight: 1.6 }}>
+            Modern supply-chain disruption frequently originates in upstream open-source packages and third-party vendors.
+            SupplyLens AI eliminates the barrier between software manifests and physical logistics through:
+          </p>
+          <ul style={{ paddingLeft: 20, marginTop: 8, lineHeight: 1.7 }}>
+            <li>
+              <b>SBOM Ingestion Engine:</b> Supports industry-standard CycloneDX 1.4+ and SPDX 2.3 JSON manifests with schema validation, PURL ecosystem inference, and dependency tree extraction.
+            </li>
+            <li>
+              <b>Threat Intelligence & CISA KEV:</b> Live enrichment querying Google's OSV.dev database and the CISA Known Exploited Vulnerabilities catalog with in-memory caching and resilient offline fallback.
+            </li>
+            <li>
+              <b>Deterministic Explainable Risk Engine:</b> Formulates a transparent 0–100 score across 6 weighted factors (Vulnerability Severity, Known Exploitation, Business Criticality, Reachability, Supplier Risk, and Data Sensitivity) normalized over available evidence.
+            </li>
+            <li>
+              <b>Cyber-Physical Exposure Mapping:</b> Maps software packages directly to runtime microservices, host cyber assets, physical facilities (warehouses/hubs), and customer orders (<code>Package → Service → Host → Facility → Orders</code>).
+            </li>
+            <li>
+              <b>Zero-Hallucination AI Copilot:</b> Grounded decision support providing human-readable explanations derived exclusively from stored digital-twin records without requiring external paid API keys.
+            </li>
+          </ul>
+        </div>
+      </Panel>
+
+      <Panel title="Dynamic AI/ML Intrusion Detection Engine">
+        <div className="about-copy">
+          <b>Real-Time PCAP Classification on CIC-IDS2017 (2.83M Records)</b>
+          <p style={{ marginTop: 5, lineHeight: 1.6 }}>
+            The simulation and live feed engines rely on real-time Artificial Intelligence models trained on massive authentic datasets:
+          </p>
+          <ul style={{ paddingLeft: 20, marginTop: 8, lineHeight: 1.7 }}>
+            <li>
+              <b>Intrusion Detection System (IDS) Random Forest:</b> Trained on 100% of the authentic CIC-IDS2017 dataset across 80 extracted features. During simulations, the engine synthesizes real-time network flow characteristics based on the active scenario and predicts the attack class (DDoS, Bot, SQL Injection, Slowloris, etc.) with 99.78% multi-class accuracy.
+            </li>
+            <li>
+              <b>Autonomous Adversary & SOAR Defense:</b> Continuous Red Team AI injects PCAP-verified attacks while Blue Team SOAR automatically triggers containment playbooks and reroutes active customer orders to resilient facilities.
+            </li>
+            <li>
+              <b>Business Impact Regression:</b> Dynamically calculates estimated <code>downtime_minutes</code> and non-linear <code>estimated_revenue_loss</code> based on real-time asset telemetry and active containment controls.
+            </li>
+          </ul>
+        </div>
+      </Panel>
+
+      <Panel title="How to demonstrate the platform">
+        <ol className="guide-steps">
+          <li><b>Admin View:</b> Inspect the relational digital twin—physical facilities on the India map, inventory batches, orders, shipments, and IoT/OT telemetry.</li>
+          <li><b>Cyber View:</b> Inspect derived asset postures, live ML packet stream, attack surfaces, controls, and autonomous Red vs Blue operations.</li>
+          <li><b>Live Attack & Response:</b> Launch a simulated attack from Simulation or Hacker Remote, watch the live feed turn red, and apply SOAR containment actions in Incidents.</li>
+          <li><b>SupplyLens AI Ingestion & Threat Intelligence:</b> Open SBOM Imports to ingest a CycloneDX/SPDX manifest, explore Component Inventory, and click "OSV Enrich" for live threat data.</li>
+          <li><b>Cyber-Physical Linkage & Scenario Lab:</b> Trace the software propagation chain in Exposure Map, evaluate baseline vs. hardened supply-chain impact in Scenario Lab, and query the AI Risk Copilot.</li>
+          <li><b>What-If Comparison:</b> Compare baseline exposure against the hardened control environment to prove security ROI.</li>
+        </ol>
+      </Panel>
+
+      <Panel title="Project Development Timeline & Milestones">
+        <div className="project-timeline">
+          {timeline.map(item => (
+            <div key={item.week}>
+              <span>{item.week}</span>
+              <section>
+                <b>{item.title}</b>
+                <p>{item.detail}</p>
+              </section>
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  )
+}
 
 function CyberTable({ endpoint, name, columns }: { endpoint: string; name: string; columns: any[] }) { return <ResourceTable resource={name} endpoint={endpoint} columns={columns} /> }
 function Loading() { return <div className="loading"><RefreshCw size={18} />Loading twin state...</div> }
