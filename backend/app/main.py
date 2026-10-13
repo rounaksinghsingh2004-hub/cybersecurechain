@@ -240,6 +240,31 @@ app.add_middleware(
 )
 
 
+# ---------------------------------------------------------------------------
+# Global exception handler — always injects CORS headers even on crashes
+# This ensures the browser can read 500 error responses from cross-origin
+# ---------------------------------------------------------------------------
+from fastapi.responses import JSONResponse
+from fastapi import Request as FastAPIRequest
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: FastAPIRequest, exc: Exception):
+    origin = request.headers.get("origin", "")
+    cors_headers = {}
+    # Match vercel.app origins or explicit allowed origins
+    import re
+    if origin and (re.match(r"https://.*\.vercel\.app", origin) or origin in settings.cors_origins):
+        cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)},
+        headers=cors_headers,
+    )
+
 
 
 class TransitionRequest(BaseModel):

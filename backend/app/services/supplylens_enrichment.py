@@ -135,3 +135,88 @@ class VulnerabilityEnrichmentService:
 
         _OSV_CACHE[cache_key] = (now, findings)
         return findings
+
+    async def enrich_component(
+        self, ecosystem: str, name: str, version: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Public entry point called by the API route.
+        Maps the stored ecosystem string to the OSV ecosystem format and
+        queries OSV.dev, returning a list of finding dicts.
+        """
+        # Map common ecosystem aliases to OSV-recognised names
+        _OSV_ECOSYSTEM_MAP = {
+            "npm": "npm",
+            "pypi": "PyPI",
+            "python": "PyPI",
+            "maven": "Maven",
+            "java": "Maven",
+            "golang": "Go",
+            "go": "Go",
+            "rubygems": "RubyGems",
+            "ruby": "RubyGems",
+            "cargo": "crates.io",
+            "rust": "crates.io",
+            "nuget": "NuGet",
+            "dotnet": "NuGet",
+            "packagist": "Packagist",
+            "php": "Packagist",
+            "hex": "Hex",
+            "erlang": "Hex",
+        }
+        osv_ecosystem = _OSV_ECOSYSTEM_MAP.get((ecosystem or "generic").lower().strip(), "npm")
+
+        try:
+            return await self.query_osv(name, version, osv_ecosystem)
+        except Exception:
+            # Always return an empty list on failure rather than crashing
+            return []
+
+    async def check_source_health(self) -> Dict[str, Any]:
+        """
+        Probe OSV.dev with a lightweight request and return source health status.
+        """
+        osv_status = "UNKNOWN"
+        latency_ms = None
+        try:
+            import time as _time
+            t0 = _time.monotonic()
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                resp = await client.post(
+                    "https://api.osv.dev/v1/query",
+                    json={"version": "1.0.0", "package": {"name": "lodash", "ecosystem": "npm"}},
+                )
+            latency_ms = round((_time.monotonic() - t0) * 1000)
+            osv_status = "ONLINE" if resp.status_code == 200 else "DEGRADED"
+            _LAST_SYNC_STATUS["osv_available"] = resp.status_code == 200
+        except Exception:
+            osv_status = "OFFLINE"
+            _LAST_SYNC_STATUS["osv_available"] = False
+
+        _LAST_SYNC_STATUS["last_check_timestamp"] = datetime.utcnow().isoformat()
+
+        return {
+            "timestamp": _LAST_SYNC_STATUS["last_check_timestamp"],
+            "osv_online": _LAST_SYNC_STATUS["osv_available"],
+            "cache_entries": len(_OSV_CACHE),
+            "sources": [
+                {
+                    "name": "OSV.dev API",
+                    "status": osv_status,
+                    "latency_ms": latency_ms,
+                    "url": "https://api.osv.dev/v1/query",
+                },
+                {
+                    "name": "CISA KEV Catalog",
+                    "status": "ACTIVE",
+                    "rules": len(KNOWN_CISA_KEV_CVES),
+                    "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+                },
+                {
+                    "name": "SupplyLens Local Cache",
+                    "status": "OPERATIONAL",
+                    "entries": len(_OSV_CACHE),
+                    "ttl_seconds": CACHE_TTL_SECONDS,
+                },
+            ],
+        }
