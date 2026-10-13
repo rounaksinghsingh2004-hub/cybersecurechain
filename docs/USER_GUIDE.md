@@ -36,17 +36,16 @@ https://frontend-mauve-chi-80.vercel.app
 
 > **First load on Render (free tier):** The backend may take **20–30 seconds** to wake up if it has been idle. Wait for the overview cards to populate — the spinning loader will disappear once data arrives.
 
-### Step 1.2 — Understand the Three Navigation Modes
+### Step 1.2 — Understand the Unified Navigation Modes
 
-At the top-left of the sidebar you will see **three mode-switch buttons**:
+At the top-left of the sidebar you will see **two primary mode-switch buttons**:
 
 | Button | Mode | What it shows |
 |---|---|---|
-| **ADMIN** | Operations | Supply chain twin — facilities, inventory, orders, shipments, fleet, employees, machines, IoT |
-| **CYBER** | Cyber Resilience | Security posture, attack surface, vulnerabilities, incidents, IDS, SOAR, simulations |
-| **SUPPLY LENS** | SupplyLens AI | SBOM ingestion, software components, CVE findings, supplier risk, exposure map, AI copilot |
+| **ADMIN** | Operations Control Tower | Supply chain twin — facilities, inventory, orders, shipments, fleet, employees, machines, IoT & OT assets |
+| **CYBER** | Cyber Resilience & SupplyLens AI | Complete cyber defense suite: Security posture, ML-IDS auto defense, attack surface, vulnerabilities, risk register, What-If lab, plus **SupplyLens AI Software & Supplier Risk Intelligence** (SBOM imports, components, findings, supplier register, exposure map, AI copilot, scenario lab) |
 
-Click any mode button to switch. The sidebar navigation changes to match the selected mode.
+Click either mode button to switch. In **CYBER** mode, the sidebar contains both operational cyber defense controls and the **SUPPLYLENS AI INTELLIGENCE** section separated by a clean visual divider.
 
 ### Step 1.3 — Live Event Feed
 

@@ -473,25 +473,13 @@ function RoutedApp() {
   const location = useLocation();
   const { view, setView } = useAppStore();
   const parts = location.pathname.split('/').filter(Boolean);
-  const activeView = parts[0] === 'cyber' ? 'cyber' : parts[0] === 'supplylens' ? 'supplylens' : 'admin';
+  const activeView = parts[0] === 'admin' ? 'admin' : 'cyber';
   useEffect(() => setView(activeView), [activeView, setView]);
-  const page = parts[0] === 'guide' ? 'guide' : parts[0] === 'details' ? 'details' : parts[1] || (activeView === 'admin' ? 'overview' : activeView === 'cyber' ? 'security-overview' : 'sl-overview');
+  const page = parts[0] === 'guide' ? 'guide' : parts[0] === 'details' ? 'details' : parts[1] || (activeView === 'admin' ? 'overview' : 'security-overview');
 
   const component = useMemo(() => {
     if (page === 'guide') return <Guide />;
     if (page === 'details') return <EntityDetails />;
-
-    if (activeView === 'supplylens') {
-      if (page === 'sl-overview' || page === 'overview') return <SupplyLensOverview />;
-      if (page === 'sbom-imports') return <SbomImports />;
-      if (page === 'components') return <ComponentInventory />;
-      if (page === 'findings') return <FindingsView />;
-      if (page === 'suppliers') return <SupplierIntelligence />;
-      if (page === 'exposure-map') return <ExposureMap />;
-      if (page === 'ai-copilot') return <AICopilot />;
-      if (page === 'scenario-lab') return <ScenarioLab />;
-      return <SupplyLensOverview />;
-    }
 
     if (activeView === 'admin') {
       if (page === 'overview') return <Overview />;
@@ -520,6 +508,14 @@ function RoutedApp() {
     if (page === 'incidents') return <Incidents />;
     if (page === 'timeline') return <Timeline />;
     if (page === 'what-if') return <WhatIf />;
+    if (page === 'sl-overview' || page === 'supplylens') return <SupplyLensOverview />;
+    if (page === 'sbom-imports') return <SbomImports />;
+    if (page === 'components') return <ComponentInventory />;
+    if (page === 'findings') return <FindingsView />;
+    if (page === 'suppliers') return <SupplierIntelligence />;
+    if (page === 'exposure-map') return <ExposureMap />;
+    if (page === 'ai-copilot') return <AICopilot />;
+    if (page === 'scenario-lab') return <ScenarioLab />;
     const tables: Record<string, [string, string, any[]]> = {
       'attack-surface': ['Attack surface', '/api/cyber/attack-surface', [{ key: 'code', label: 'Asset' }, { key: 'name', label: 'Name' }, { key: 'type', label: 'Surface' }, { key: 'facility', label: 'Facility' }, { key: 'risk_level', label: 'Risk', status: true }]],
       vulnerabilities: ['Vulnerabilities', '/api/cyber/vulnerabilities', [{ key: 'vulnerability', label: 'Vulnerability' }, { key: 'asset_name', label: 'Affected asset' }, { key: 'facility', label: 'Facility' }, { key: 'severity', label: 'Severity', status: true }, { key: 'recommended_control', label: 'Recommended control' }]],

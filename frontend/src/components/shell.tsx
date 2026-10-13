@@ -7,9 +7,48 @@ import { useAppStore, type View } from '../stores/app-store'
 import { useLiveStore } from '../stores/live-store'
 import { post } from '../services/api'
 
-const admin = [{ label: 'Overview', icon: Gauge }, { label: 'Supply Chain', icon: Map }, { label: 'Facilities', icon: Building2 }, { label: 'Inventory', icon: Boxes }, { label: 'Products', icon: Package }, { label: 'Orders', icon: Package }, { label: 'Shipments', icon: Truck }, { label: 'Fleet', icon: Truck }, { label: 'Employees', icon: Users }, { label: 'Machines & Robots', icon: Cpu }, { label: 'IoT & OT', icon: Radar }, { label: 'Digital Twin', icon: Radar }]
-const cyber = [{ label: 'Auto Defense', icon: Zap }, { label: 'Security Overview', icon: ShieldCheck }, { label: 'Simulation', icon: Factory }, { label: 'Attack Surface', icon: Radar }, { label: 'Vulnerabilities', icon: ShieldAlert }, { label: 'Incidents', icon: Activity }, { label: 'Attack Paths', icon: Map }, { label: 'Risk', icon: Gauge }, { label: 'Resilience', icon: ShieldCheck }, { label: 'Controls', icon: ShieldCheck }, { label: 'What-If', icon: ChevronRight }, { label: 'Timeline', icon: Activity }]
-const supplylens = [{ label: 'SL Overview', icon: Brain }, { label: 'SBOM Imports', icon: FileCode }, { label: 'Components', icon: Box }, { label: 'Findings', icon: ShieldAlert }, { label: 'Suppliers', icon: Network }, { label: 'Exposure Map', icon: GitBranch }, { label: 'AI Copilot', icon: Brain }, { label: 'Scenario Lab', icon: RefreshCw }]
+type NavItem = { label: string; icon?: any; section?: boolean; path?: string }
+
+const admin: NavItem[] = [
+  { label: 'Overview', icon: Gauge },
+  { label: 'Supply Chain', icon: Map },
+  { label: 'Facilities', icon: Building2 },
+  { label: 'Inventory', icon: Boxes },
+  { label: 'Products', icon: Package },
+  { label: 'Orders', icon: Package },
+  { label: 'Shipments', icon: Truck },
+  { label: 'Fleet', icon: Truck },
+  { label: 'Employees', icon: Users },
+  { label: 'Machines & Robots', icon: Cpu },
+  { label: 'IoT & OT', icon: Radar },
+  { label: 'Digital Twin', icon: Radar },
+]
+
+const cyber: NavItem[] = [
+  { label: 'Auto Defense', icon: Zap },
+  { label: 'Security Overview', icon: ShieldCheck },
+  { label: 'Simulation', icon: Factory },
+  { label: 'Attack Surface', icon: Radar },
+  { label: 'Vulnerabilities', icon: ShieldAlert },
+  { label: 'Incidents', icon: Activity },
+  { label: 'Attack Paths', icon: Map },
+  { label: 'Risk', icon: Gauge },
+  { label: 'Resilience', icon: ShieldCheck },
+  { label: 'Controls', icon: ShieldCheck },
+  { label: 'What-If', icon: ChevronRight },
+  { label: 'Timeline', icon: Activity },
+  // ── Unified SupplyLens AI Module ──
+  { label: 'SUPPLYLENS AI INTELLIGENCE', section: true },
+  { label: 'SupplyLens Overview', icon: Brain, path: '/cyber/sl-overview' },
+  { label: 'SBOM Imports', icon: FileCode, path: '/cyber/sbom-imports' },
+  { label: 'Components', icon: Box, path: '/cyber/components' },
+  { label: 'Findings', icon: ShieldAlert, path: '/cyber/findings' },
+  { label: 'Suppliers', icon: Network, path: '/cyber/suppliers' },
+  { label: 'Exposure Map', icon: GitBranch, path: '/cyber/exposure-map' },
+  { label: 'AI Copilot', icon: Brain, path: '/cyber/ai-copilot' },
+  { label: 'Scenario Lab', icon: RefreshCw, path: '/cyber/scenario-lab' },
+]
+
 const slug = (label: string) => label.toLowerCase().replaceAll(' ', '-').replaceAll('&', '').replaceAll('  ', '-')
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -19,12 +58,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const [damage, setDamage] = useState(0)
 
-  const nav = view === 'admin' ? admin : view === 'cyber' ? cyber : supplylens
+  const isCyber = view === 'cyber' || view === 'supplylens'
+  const nav = view === 'admin' ? admin : cyber
+
   const switchView = (next: View) => {
     setView(next)
     if (next === 'admin') navigate('/admin/overview')
-    else if (next === 'cyber') navigate('/cyber/security-overview')
-    else navigate('/supplylens/sl-overview')
+    else navigate('/cyber/security-overview')
   }
 
   const showOverlay = view === 'admin' && activeCampaign?.stage !== 'MITIGATED'
@@ -50,7 +90,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className={`app-shell ${overlayClass}`} data-damage={damage.toLocaleString()}>
       <style>{`
-        /* Shared Overlay Styles - Cover the whole fixed screen */
+        /* Shared Overlay Styles */
         .attack-ransomware::after,
         .attack-ddos::after,
         .attack-sqli::after,
@@ -70,7 +110,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
           pointer-events: none;
         }
 
-        /* 1. Ransomware */
         .attack-ransomware { animation: glitch 0.5s infinite; }
         .attack-ransomware::after {
           content: 'SYSTEM ENCRYPTED BY LOCKBIT 3.0 \\A PAY 50 BTC TO DECRYPT SUPPLY CHAIN \\A \\A FINANCIAL DAMAGE: ₹' attr(data-damage);
@@ -78,7 +117,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
           color: #ff3333;
         }
 
-        /* 2. DDoS */
         .attack-ddos { animation: shake 0.2s infinite; filter: grayscale(0.8); }
         .attack-ddos::after {
           content: '503 SERVICE UNAVAILABLE \\A CONNECTION TIMEOUT - OT NETWORK OFFLINE \\A \\A FINANCIAL DAMAGE: ₹' attr(data-damage);
@@ -86,7 +124,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
           color: #fff;
         }
 
-        /* 3. SQL Injection */
         .attack-sqli::after {
           content: 'DATABASE COMPROMISED \\A EXFILTRATING CUSTOMER RECORDS... \\A \\A FINANCIAL DAMAGE: ₹' attr(data-damage);
           background: rgba(0, 20, 0, 0.9);
@@ -94,7 +131,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
           animation: blink 1s infinite;
         }
 
-        /* 4. General APT */
         .attack-general::after {
           content: 'UNAUTHORIZED ACCESS DETECTED \\A APT LATERAL MOVEMENT IN PROGRESS \\A \\A FINANCIAL DAMAGE: ₹' attr(data-damage);
           background: rgba(20, 10, 0, 0.9);
@@ -116,6 +152,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
           50% { opacity: 0.2; }
           100% { opacity: 1; }
         }
+
+        .sidebar-section-divider {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin: 14px 10px 6px;
+          padding-top: 10px;
+          border-top: 1px solid #1f373e;
+          font-size: 8.5px;
+          font-weight: 700;
+          letter-spacing: 0.9px;
+          color: #5ce0c0;
+          text-transform: uppercase;
+        }
       `}</style>
       <aside className="sidebar">
         <div className="brand">
@@ -125,16 +175,31 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <LiveFeed />
         <div className="view-switch">
           <button className={view === 'admin' ? 'selected' : ''} onClick={() => switchView('admin')}>ADMIN</button>
-          <button className={view === 'cyber' ? 'selected' : ''} onClick={() => switchView('cyber')}>CYBER</button>
-          <button className={view === 'supplylens' ? 'selected' : ''} onClick={() => switchView('supplylens')} style={{fontSize:9,letterSpacing:'0.5px'}}>SUPPLY<br/>LENS</button>
+          <button className={isCyber ? 'selected' : ''} onClick={() => switchView('cyber')}>CYBER</button>
         </div>
         <nav>
-          {nav.map(item => {
+          {nav.map((item, idx) => {
+            if (item.section) {
+              return (
+                <div key={idx} className="sidebar-section-divider">
+                  <span>{item.label}</span>
+                </div>
+              )
+            }
             const Icon = item.icon
-            const target = `/${view}/${slug(item.label)}`
-            return <Link className={location.pathname === target ? 'active' : ''} to={target} key={item.label}><Icon size={16} />{item.label}</Link>
+            const target = item.path || `/${view}/${slug(item.label)}`
+            const isActive = location.pathname === target || (item.path && location.pathname.startsWith(item.path.replace('/cyber/', '/supplylens/')))
+            return (
+              <Link className={isActive ? 'active' : ''} to={target} key={item.label}>
+                <Icon size={16} />
+                {item.label}
+              </Link>
+            )
           })}
-          <Link className={location.pathname === '/guide' ? 'active' : ''} to="/guide"><CircleHelp size={16} />About & Guide</Link>
+          <Link className={location.pathname === '/guide' ? 'active' : ''} to="/guide">
+            <CircleHelp size={16} />
+            About &amp; Guide
+          </Link>
         </nav>
         <div className="sidebar-foot">
           <span className={`live-dot${connected ? '' : ' offline'}`} />
@@ -145,7 +210,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <header className="topbar">
           <div>
             <span className="eyebrow">NEXORA COMMERCE &amp; LOGISTICS</span>
-            <h1>{view === 'admin' ? 'Operations Control Tower' : view === 'cyber' ? 'Cyber Resilience Center' : 'SupplyLens AI — Software & Supplier Risk'}</h1>
+            <h1>{view === 'admin' ? 'Operations Control Tower' : 'Cyber Resilience & SupplyLens AI Intelligence'}</h1>
           </div>
           <div className="top-actions">
             <span className={`ws-status ${connected ? 'online' : 'offline'}`}>
@@ -157,7 +222,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 ⚠ {alerts.length} ALERT{alerts.length > 1 ? 'S' : ''}
               </span>
             )}
-            <button className="reset-demo-btn" onClick={() => { post('/api/cyber/auto-defense/trigger-defense'); useLiveStore.getState().clearAlerts() }} style={{ background: '#42b7c2', color: '#000', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 11, fontWeight: 'bold', cursor: 'pointer' }}>
+            <button
+              className="reset-demo-btn"
+              onClick={() => { post('/api/cyber/auto-defense/trigger-defense'); useLiveStore.getState().clearAlerts() }}
+              style={{ background: '#42b7c2', color: '#000', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 11, fontWeight: 'bold', cursor: 'pointer' }}
+            >
               Reset Demo
             </button>
             <span className="safety">SAFE SIMULATION ONLY</span>
